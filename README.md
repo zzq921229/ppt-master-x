@@ -110,22 +110,39 @@ PPT Master runs in **any tool with agent capability** — read/write files, exec
 
 ### 3. Set Up
 
-**Option A — Download ZIP** (no Git required): click **Code → Download ZIP** on this page, then unzip.
+**For Trae IDE users (recommended):**
 
-**Option B — Git clone** (requires [Git](https://git-scm.com/downloads) installed):
-
+1. Clone this repository:
 ```bash
 git clone https://github.com/zzq921229/ppt-master-x.git
 cd ppt-master-x
 ```
 
-Then install dependencies:
+2. Run the Trae installer:
+   - **Windows**: Double-click `install-trae.bat`
+   - **macOS / Linux**: Run `bash install-trae.sh`
+
+The installer will automatically detect your Trae edition (International or CN) and copy the skill to the correct directory (`~/.trae/skills/` or `~/.trae-cn/skills/`).
+
+**Manual installation (if auto-installer doesn't work):**
+
+```bash
+# For Trae International
+mkdir -p ~/.trae/skills
+cp -r skills/ppt-master ~/.trae/skills/
+
+# For Trae CN
+mkdir -p ~/.trae-cn/skills
+cp -r skills/ppt-master ~/.trae-cn/skills/
+```
+
+Then install Python dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-To update later (Option A / B): `python3 skills/ppt-master/scripts/update_repo.py`
+To update later: `python3 skills/ppt-master/scripts/update_repo.py`
 
 ### 4. Create
 

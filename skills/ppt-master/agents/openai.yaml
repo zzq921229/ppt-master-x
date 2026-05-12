@@ -1,0 +1,4 @@
+interface:
+  display_name: "PPT Master"
+  short_description: "Generate natively editable PPTX from PDF/DOCX/URL/Markdown"
+  default_prompt: "Use ppt-master to create a presentation. First read skills/ppt-master/SKILL.md, then follow the workflow: process source → init project → select template → strategist confirmations → generate SVGs → export PPTX."
