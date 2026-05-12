@@ -9,10 +9,11 @@ Project tools create, validate, and inspect the standard PPT Master workspace.
 Main entry point for project setup and validation.
 
 ```bash
-python3 scripts/project_manager.py init <project_name> --format ppt169
+python3 scripts/project_manager.py init <project_name> --format ppt169 [--template <template_id>]
 python3 scripts/project_manager.py import-sources <project_path> <source1> [<source2> ...]
 python3 scripts/project_manager.py validate <project_path>
 python3 scripts/project_manager.py info <project_path>
+python3 scripts/project_manager.py list-templates [--json]
 ```
 
 Notes:
@@ -22,6 +23,9 @@ Notes:
   note), to avoid leaving unintended artifacts that could be committed by mistake.
   Pass `--copy` to force a copy for in-repo sources instead.
 - `--move` and `--copy` are mutually exclusive.
+- `--template <template_id>` copies the built-in layout template (SVGs, design spec, and
+  image assets) directly into the new project's `templates/` and `images/` directories.
+  Run `list-templates` to see available IDs.
 
 Common formats:
 - `ppt169`
@@ -35,6 +39,13 @@ Common formats:
 Examples:
 
 ```bash
+# List all built-in templates
+python3 scripts/project_manager.py list-templates
+
+# Initialize a project with a built-in template
+python3 scripts/project_manager.py init my_presentation --format ppt169 --template mckinsey
+
+# Standard initialization without template
 python3 scripts/project_manager.py init my_presentation --format ppt169
 python3 scripts/project_manager.py validate projects/my_presentation_ppt169_20251116
 python3 scripts/project_manager.py info projects/my_presentation_ppt169_20251116

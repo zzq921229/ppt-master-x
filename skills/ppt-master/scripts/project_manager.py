@@ -2,14 +2,16 @@
 """PPT Master project management helpers.
 
 Usage:
-    python3 scripts/project_manager.py init <project_name> [--format ppt169] [--dir projects]
+    python3 scripts/project_manager.py init <project_name> [--format ppt169] [--dir projects] [--template <template_id>]
     python3 scripts/project_manager.py import-sources <project_path> <source1> [<source2> ...] [--move | --copy]
     python3 scripts/project_manager.py validate <project_path>
     python3 scripts/project_manager.py info <project_path>
+    python3 scripts/project_manager.py list-templates [--json]
 """
 
 from __future__ import annotations
 
+import json
 import re
 import shutil
 import subprocess
@@ -110,11 +112,96 @@ class ProjectManager:
     def __init__(self, base_dir: str = "projects") -> None:
         self.base_dir = Path(base_dir)
 
+    @staticmethod
+    def _get_layouts_index_path() -> Path:
+        """Return the path to the global layouts index JSON."""
+        return SKILL_DIR / "templates" / "layouts" / "layouts_index.json"
+
+    @classmethod
+    def load_layout_index(cls) -> dict[str, dict]:
+        """Load and return the global layout template index."""
+        index_path = cls._get_layouts_index_path()
+        if not index_path.exists():
+            return {}
+        try:
+            with index_path.open("r", encoding="utf-8") as f:
+                data = json.load(f)
+            if not isinstance(data, dict):
+                return {}
+            return data
+        except (json.JSONDecodeError, OSError):
+            return {}
+
+    @classmethod
+    def list_templates(cls, output_json: bool = False) -> None:
+        """Print all available built-in layout templates."""
+        index = cls.load_layout_index()
+        if not index:
+            print("No built-in templates found.")
+            return
+
+        if output_json:
+            print(json.dumps(index, indent=2, ensure_ascii=False))
+            return
+
+        print(f"\nAvailable layout templates ({len(index)} total):")
+        print("=" * 80)
+        for tid, meta in sorted(index.items()):
+            label = meta.get("label", tid)
+            summary = meta.get("summary", "")
+            keywords = ", ".join(meta.get("keywords", []))
+            print(f"\n  ID:       {tid}")
+            print(f"  Label:    {label}")
+            print(f"  Summary:  {summary}")
+            print(f"  Keywords: {keywords}")
+        print("\n" + "=" * 80)
+        print(f"\nUse 'init <project> --template <ID>' to apply a template.")
+
+    def _apply_template(self, project_path: Path, template_name: str) -> None:
+        """Copy a built-in layout template into the project directory by name."""
+        index = self.load_layout_index()
+        if template_name not in index:
+            available = ", ".join(sorted(index.keys())) if index else "(none)"
+            raise ValueError(
+                f"Unknown template: '{template_name}'. "
+                f"Available: {available}"
+            )
+
+        template_dir = SKILL_DIR / "templates" / "layouts" / template_name
+        if not template_dir.exists() or not template_dir.is_dir():
+            raise FileNotFoundError(
+                f"Template directory not found: {template_dir}"
+            )
+
+        project_templates = project_path / "templates"
+        project_images = project_path / "images"
+
+        copied_svg = 0
+        copied_spec = 0
+        copied_images = 0
+
+        for item in sorted(template_dir.iterdir()):
+            if item.suffix.lower() == ".svg":
+                shutil.copy2(item, project_templates / item.name)
+                copied_svg += 1
+            elif item.name.lower() == "design_spec.md":
+                shutil.copy2(item, project_templates / item.name)
+                copied_spec += 1
+            elif item.suffix.lower() in {".png", ".jpg", ".jpeg", ".gif", ".webp"}:
+                shutil.copy2(item, project_images / item.name)
+                copied_images += 1
+
+        print(f"Template '{template_name}' applied:")
+        print(f"  - {copied_svg} SVG layout(s) copied to templates/")
+        print(f"  - {copied_spec} design spec(s) copied to templates/")
+        print(f"  - {copied_images} image asset(s) copied to images/")
+
     def init_project(
         self,
         project_name: str,
         canvas_format: str = "ppt169",
         base_dir: str | None = None,
+        template_name: str | None = None,
     ) -> str:
         base_path = Path(base_dir) if base_dir else self.base_dir
 
@@ -144,13 +231,21 @@ class ProjectManager:
         ):
             (project_path / rel_path).mkdir(parents=True, exist_ok=True)
 
+        # Apply built-in template if requested
+        template_line = ""
+        if template_name:
+            self._apply_template(project_path, template_name)
+            template_line = f"- Template: {template_name}\n"
+
         canvas_info = self.CANVAS_FORMATS[normalized_format]
         readme_path = project_path / "README.md"
         readme_path.write_text(
             (
                 f"# {project_name}\n\n"
                 f"- Canvas format: {normalized_format}\n"
-                f"- Created: {date_str}\n\n"
+                f"- Created: {date_str}\n"
+                f"{template_line}"
+                "\n"
                 "## Directories\n\n"
                 "- `svg_output/`: raw SVG output\n"
                 "- `svg_final/`: finalized SVG output\n"
@@ -622,7 +717,7 @@ def print_usage() -> None:
     print(__doc__)
 
 
-def parse_init_args(argv: list[str]) -> tuple[str, str, str]:
+def parse_init_args(argv: list[str]) -> tuple[str, str, str, str | None]:
     """Parse arguments for the `init` subcommand."""
     if len(argv) < 3:
         raise ValueError("Project name is required")
@@ -630,6 +725,7 @@ def parse_init_args(argv: list[str]) -> tuple[str, str, str]:
     project_name = argv[2]
     canvas_format = "ppt169"
     base_dir = "projects"
+    template_name: str | None = None
 
     i = 3
     while i < len(argv):
@@ -639,10 +735,13 @@ def parse_init_args(argv: list[str]) -> tuple[str, str, str]:
         elif argv[i] == "--dir" and i + 1 < len(argv):
             base_dir = argv[i + 1]
             i += 2
+        elif argv[i] == "--template" and i + 1 < len(argv):
+            template_name = argv[i + 1]
+            i += 2
         else:
             i += 1
 
-    return project_name, canvas_format, base_dir
+    return project_name, canvas_format, base_dir, template_name
 
 
 def parse_import_args(argv: list[str]) -> tuple[str, list[str], bool, bool]:
@@ -684,13 +783,22 @@ def main() -> None:
 
     try:
         if command == "init":
-            project_name, canvas_format, base_dir = parse_init_args(sys.argv)
-            project_path = manager.init_project(project_name, canvas_format, base_dir=base_dir)
+            project_name, canvas_format, base_dir, template_name = parse_init_args(sys.argv)
+            project_path = manager.init_project(
+                project_name, canvas_format, base_dir=base_dir, template_name=template_name
+            )
             print(f"[OK] Project initialized: {project_path}")
+            if template_name:
+                print(f"[OK] Applied template: {template_name}")
             print("Next:")
             print("1. Put source files into sources/ (or use import-sources)")
             print("2. Save your design spec to the project root")
             print("3. Generate SVG files into svg_output/")
+            return
+
+        if command == "list-templates":
+            output_json = "--json" in sys.argv
+            ProjectManager.list_templates(output_json=output_json)
             return
 
         if command == "import-sources":

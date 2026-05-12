@@ -117,6 +117,14 @@ python3 ${SKILL_DIR}/scripts/project_manager.py init <project_name> --format <fo
 
 Format options: `ppt169` (default), `ppt43`, `xhs`, `story`, etc. For the full format list, see `references/canvas-formats.md`.
 
+If the user already requested a built-in template during Step 1, apply it directly at init time:
+
+```bash
+python3 ${SKILL_DIR}/scripts/project_manager.py init <project_name> --format <format> --template <template_name>
+```
+
+This copies the template's SVG layouts, `design_spec.md`, and image assets into the project automatically.
+
 Import source content (choose based on the situation):
 
 | Situation | Action |
@@ -148,12 +156,15 @@ There is no slug matching, no name lookup, no fuzzy resolution. A template name 
 The path may live anywhere — `skills/ppt-master/templates/layouts/<name>/` (the built-in library), `projects/<other_project>/template/` (reusing a previous project's templates), or any other location. Location is irrelevant; what matters is that the user named the path.
 
 ```bash
+# Option A: manual copy (legacy, still valid)
 TEMPLATE_DIR=<user-supplied path>
 cp ${TEMPLATE_DIR}/*.svg <project_path>/templates/
 cp ${TEMPLATE_DIR}/design_spec.md <project_path>/templates/
 cp ${TEMPLATE_DIR}/*.png <project_path>/images/ 2>/dev/null || true
 cp ${TEMPLATE_DIR}/*.jpg <project_path>/images/ 2>/dev/null || true
 ```
+
+> If you used `--template <template_name>` during `project_manager.py init` in Step 2, the template files are already in place — skip the copy commands above.
 
 > Style descriptions ("麦肯锡风格" / "Keynote 风" / "极简风" / etc.) never trigger Step 3. They flow naturally into Strategist's Eight Confirmations as part of the user's input — Strategist uses them as a style brief when proposing color / typography / tone in confirmations e and g.
 
