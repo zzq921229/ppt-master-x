@@ -467,10 +467,11 @@ def generate_gallery(filter_keyword: str | None = None) -> Path:
     import json as _json
     json_str = _json.dumps(templates_json, ensure_ascii=False)
 
-    html = HTML_TEMPLATE.format(
-        list_cards="\n".join(list_cards),
-        templates_json=json_str,
-        filter_value=(filter_keyword or "").replace('"', '\&quot;'),
+    html = (
+        HTML_TEMPLATE
+        .replace("{list_cards}", "\n".join(list_cards))
+        .replace("{templates_json}", json_str)
+        .replace("{filter_value}", (filter_keyword or "").replace('"', '&quot;'))
     )
 
     fd, tmp_path = tempfile.mkstemp(prefix="ppt_master_gallery_", suffix=".html")
