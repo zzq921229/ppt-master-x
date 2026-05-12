@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Generate a local HTML gallery for built-in layout templates.
+"""Generate a modern local HTML gallery for built-in layout templates.
 
 Usage:
     python3 scripts/template_gallery.py [filter_keyword]
 
-Each template is presented as a slide deck viewer — browse pages inline
-without leaving the gallery. Click thumbnails to switch pages; use arrow
-buttons to navigate. Zero external dependencies.
+Two-view design:
+  - List view: cover thumbnails, style description, color palette, keywords
+  - Detail view: full slide deck browser with prev/next and thumbnail strip
 """
 
 from __future__ import annotations
@@ -17,7 +17,6 @@ import sys
 import tempfile
 import webbrowser
 from pathlib import Path
-
 
 TOOLS_DIR = Path(__file__).resolve().parent
 SKILL_DIR = TOOLS_DIR.parent
@@ -39,219 +38,336 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PPT Master - Template Gallery</title>
 <style>
-  :root {{
-    --bg: #f0f2f5;
-    --card-bg: #ffffff;
-    --text: #1a1a1a;
-    --muted: #666666;
-    --border: #d0d7de;
-    --accent: #1565c0;
-    --radius: 12px;
-    --shadow: 0 2px 8px rgba(0,0,0,0.06);
-    --shadow-hover: 0 8px 28px rgba(0,0,0,0.12);
-  }}
-  * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-  body {{
+  :root {
+    --bg: #f4f6f9;
+    --surface: #ffffff;
+    --text: #1e293b;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --accent: #4f46e5;
+    --accent-light: #eef2ff;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06);
+    --shadow-hover: 0 12px 32px rgba(0,0,0,0.10);
+    --shadow-lg: 0 20px 48px rgba(0,0,0,0.14);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft YaHei", sans-serif;
-    background: var(--bg); color: var(--text); padding: 32px 24px;
-  }}
-  h1 {{ font-size: 28px; margin-bottom: 6px; }}
-  .subtitle {{ color: var(--muted); margin-bottom: 24px; }}
-  .controls {{
-    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
-    margin-bottom: 28px;
-  }}
-  .controls input {{
-    padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px;
-    font-size: 14px; min-width: 280px;
-  }}
-  .controls .count {{ color: var(--muted); font-size: 14px; margin-left: auto; }}
+    background: var(--bg); color: var(--text); min-height: 100vh;
+  }
+  /* Header */
+  .site-header {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    color: #fff; padding: 40px 24px 32px; text-align: center;
+  }
+  .site-header h1 { font-size: 32px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.5px; }
+  .site-header p { font-size: 15px; opacity: 0.9; max-width: 520px; margin: 0 auto; }
+  .search-bar {
+    margin-top: 20px; display: flex; justify-content: center;
+  }
+  .search-bar input {
+    width: 100%; max-width: 440px; padding: 12px 18px; border: none; border-radius: 999px;
+    font-size: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); outline: none;
+  }
+  .search-bar input::placeholder { color: #94a3b8; }
 
-  /* Template card */
-  .template {{
-    background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius);
-    margin-bottom: 28px; overflow: hidden;
-    box-shadow: var(--shadow); transition: box-shadow .2s;
-  }}
-  .template:hover {{ box-shadow: var(--shadow-hover); }}
-  .template-header {{
-    padding: 18px 20px 14px; border-bottom: 1px solid var(--border);
-    display: flex; align-items: flex-start; gap: 14px;
-  }}
-  .swatch {{
-    width: 28px; height: 28px; border-radius: 6px; flex-shrink: 0;
-    border: 1px solid rgba(0,0,0,0.08);
-  }}
-  .template-title {{ font-weight: 600; font-size: 17px; }}
-  .template-meta {{ font-size: 13px; color: var(--muted); margin-top: 3px; }}
-  .keywords {{ display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }}
-  .keyword {{
-    font-size: 12px; padding: 3px 10px; border-radius: 999px;
-    background: #eef2f7; color: var(--muted);
-  }}
+  /* List view */
+  #list-view { padding: 28px 24px 48px; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px; max-width: 1200px; margin: 0 auto;
+  }
+  .list-card {
+    background: var(--surface); border-radius: var(--radius); overflow: hidden;
+    box-shadow: var(--shadow); cursor: pointer; transition: transform .2s, box-shadow .2s;
+    border: 1px solid var(--border);
+  }
+  .list-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+  .list-cover-wrap {
+    position: relative; width: 100%; padding-top: 56.25%; background: #f8fafc;
+    overflow: hidden;
+  }
+  .list-cover-wrap svg {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    transition: transform .4s ease;
+  }
+  .list-card:hover .list-cover-wrap svg { transform: scale(1.03); }
+  .list-body { padding: 18px 20px 20px; }
+  .list-title { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  .list-desc { font-size: 13px; color: var(--muted); line-height: 1.45; margin-bottom: 12px; }
+  .palette { display: flex; gap: 6px; margin-bottom: 12px; }
+  .palette-dot {
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.06); flex-shrink: 0;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.3);
+  }
+  .keywords { display: flex; flex-wrap: wrap; gap: 6px; }
+  .keyword {
+    font-size: 11px; padding: 4px 10px; border-radius: 999px;
+    background: var(--accent-light); color: var(--accent); font-weight: 500;
+  }
 
-  /* Slide viewer */
-  .viewer {{ padding: 20px; }}
-  .stage-wrap {{
-    position: relative; width: 100%; max-width: 960px; margin: 0 auto;
-    background: #000; border-radius: 8px; overflow: hidden;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-  }}
-  .stage {{
-    position: relative; width: 100%; padding-top: 56.25%; /* 16:9 */
-  }}
-  .slide-layer {{
-    position: absolute; inset: 0; opacity: 0; transition: opacity .35s ease;
-    display: flex; align-items: center; justify-content: center;
-    background: #fff;
-  }}
-  .slide-layer.active {{ opacity: 1; z-index: 2; }}
-  .slide-layer svg {{
-    width: 100%; height: 100%; display: block;
-  }}
-
-  /* Arrows */
-  .arrow {{
-    position: absolute; top: 50%; transform: translateY(-50%);
-    width: 40px; height: 40px; border-radius: 50%;
-    background: rgba(255,255,255,0.9); border: none;
-    cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center;
-    font-size: 18px; color: #333; box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  /* Detail view */
+  #detail-view { display: none; }
+  .detail-header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(255,255,255,0.92); backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border); padding: 14px 24px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .back-btn {
+    display: flex; align-items: center; gap: 6px; padding: 8px 14px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--surface); cursor: pointer; font-size: 14px; color: var(--text);
     transition: background .15s;
-  }}
-  .arrow:hover {{ background: #fff; }}
-  .arrow.prev {{ left: 12px; }}
-  .arrow.next {{ right: 12px; }}
-  .arrow:disabled {{ opacity: .35; cursor: default; }}
+  }
+  .back-btn:hover { background: var(--bg); }
+  .detail-title { font-size: 18px; font-weight: 700; }
+  .detail-meta { font-size: 13px; color: var(--muted); margin-left: auto; }
 
-  /* Page counter */
-  .page-counter {{
-    position: absolute; bottom: 10px; right: 14px;
-    background: rgba(0,0,0,0.6); color: #fff;
-    font-size: 12px; padding: 4px 10px; border-radius: 4px;
-    z-index: 10; pointer-events: none;
-  }}
-
-  /* Thumbnail strip */
-  .strip {{
+  .detail-body { padding: 24px; max-width: 1100px; margin: 0 auto; }
+  .viewer { margin-bottom: 28px; }
+  .stage-wrap {
+    position: relative; width: 100%; max-width: 960px; margin: 0 auto;
+    background: #000; border-radius: var(--radius-sm); overflow: hidden;
+    box-shadow: var(--shadow-lg);
+  }
+  .stage { position: relative; width: 100%; padding-top: 56.25%; }
+  .slide-layer {
+    position: absolute; inset: 0; opacity: 0; transition: opacity .35s ease;
+    display: flex; align-items: center; justify-content: center; background: #fff;
+  }
+  .slide-layer.active { opacity: 1; z-index: 2; }
+  .slide-layer svg { width: 100%; height: 100%; display: block; }
+  .arrow {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 44px; height: 44px; border-radius: 50%;
+    background: rgba(255,255,255,0.95); border: none;
+    cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: #334155; box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+    transition: background .15s;
+  }
+  .arrow:hover { background: #fff; }
+  .arrow.prev { left: 14px; }
+  .arrow.next { right: 14px; }
+  .arrow:disabled { opacity: .35; cursor: default; }
+  .page-counter {
+    position: absolute; bottom: 12px; right: 16px;
+    background: rgba(0,0,0,0.55); color: #fff;
+    font-size: 12px; padding: 5px 12px; border-radius: 6px;
+    z-index: 10; pointer-events: none; font-weight: 500;
+  }
+  .strip {
     display: flex; gap: 10px; margin-top: 14px;
     overflow-x: auto; padding-bottom: 4px;
     justify-content: center;
-  }}
-  .strip-item {{
-    flex: 0 0 auto; width: 120px; cursor: pointer;
-    border: 2px solid transparent; border-radius: 6px;
-    overflow: hidden; background: #f6f8fa;
+  }
+  .strip-item {
+    flex: 0 0 auto; width: 130px; cursor: pointer;
+    border: 2px solid transparent; border-radius: 8px;
+    overflow: hidden; background: #f1f5f9;
     transition: border-color .2s, transform .15s;
-  }}
-  .strip-item:hover {{ transform: translateY(-2px); }}
-  .strip-item.active {{ border-color: var(--accent); }}
-  .strip-thumb {{
-    height: 68px; display: flex; align-items: center; justify-content: center;
+  }
+  .strip-item:hover { transform: translateY(-2px); }
+  .strip-item.active { border-color: var(--accent); }
+  .strip-thumb {
+    height: 74px; display: flex; align-items: center; justify-content: center;
     padding: 4px;
-  }}
-  .strip-thumb svg {{ max-width: 100%; max-height: 100%; width: auto; height: auto; }}
-  .strip-label {{
-    font-size: 11px; text-align: center; padding: 4px 6px;
+  }
+  .strip-thumb svg { max-width: 100%; max-height: 100%; width: auto; height: auto; }
+  .strip-label {
+    font-size: 11px; text-align: center; padding: 5px 6px;
     color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    background: #fff; border-top: 1px solid var(--border);
-  }}
+    background: #fff; border-top: 1px solid var(--border); font-weight: 500;
+  }
 
-  @media (max-width: 720px) {{
-    .stage-wrap {{ max-width: 100%; }}
-    .strip-item {{ width: 90px; }}
-    .strip-thumb {{ height: 52px; }}
-  }}
+  .detail-info {
+    background: var(--surface); border-radius: var(--radius); padding: 22px 24px;
+    border: 1px solid var(--border); box-shadow: var(--shadow);
+  }
+  .detail-info h3 { font-size: 15px; margin-bottom: 12px; color: var(--text); }
+  .info-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; font-size: 14px; }
+  .info-row .label { color: var(--muted); min-width: 80px; }
+
+  @media (max-width: 640px) {
+    .grid { grid-template-columns: 1fr; }
+    .site-header h1 { font-size: 24px; }
+    .stage-wrap { max-width: 100%; }
+    .strip-item { width: 100px; }
+    .strip-thumb { height: 56px; }
+    .detail-header { padding: 12px 16px; }
+    .detail-body { padding: 16px; }
+  }
 </style>
 </head>
 <body>
-<h1>PPT Master Template Gallery</h1>
-<div class="subtitle">Browse each template like a slide deck — click thumbnails or use arrows to switch pages</div>
-<div class="controls">
-  <input type="text" id="search" placeholder="Filter by name, keyword, or description..." value="{filter_value}">
-  <span class="count">Showing <span id="visible">{count}</span> / {count} templates</span>
+
+<!-- LIST VIEW -->
+<div id="list-view">
+  <div class="site-header">
+    <h1>Template Gallery</h1>
+    <p>Browse 17 built-in themes. Click any card to explore the full slide deck.</p>
+    <div class="search-bar">
+      <input type="text" id="search" placeholder="Search templates, styles, keywords..." value="{filter_value}">
+    </div>
+  </div>
+  <div class="grid" id="grid">
+{list_cards}
+  </div>
 </div>
-<div id="gallery">
-{cards}
+
+<!-- DETAIL VIEW -->
+<div id="detail-view">
+  <div class="detail-header">
+    <button class="back-btn" id="back-btn">&#10094; Back to Gallery</button>
+    <span class="detail-title" id="detail-title">Template</span>
+    <span class="detail-meta" id="detail-meta"></span>
+  </div>
+  <div class="detail-body" id="detail-body">
+    <!-- Injected by JS -->
+  </div>
 </div>
 
 <script>
-(function() {{
-  const galleries = document.querySelectorAll('.template');
-  galleries.forEach(card => {{
-    const tid = card.dataset.id;
-    const layers = card.querySelectorAll('.slide-layer');
-    const thumbs = card.querySelectorAll('.strip-item');
-    const prevBtn = card.querySelector('.arrow.prev');
-    const nextBtn = card.querySelector('.arrow.next');
-    const counter = card.querySelector('.page-counter');
-    let idx = 0;
-    const total = layers.length;
+(function() {
+  const templates = {templates_json};
 
-    function show(i) {{
+  const listView = document.getElementById('list-view');
+  const detailView = document.getElementById('detail-view');
+  const detailBody = document.getElementById('detail-body');
+  const detailTitle = document.getElementById('detail-title');
+  const detailMeta = document.getElementById('detail-meta');
+  const backBtn = document.getElementById('back-btn');
+  const search = document.getElementById('search');
+  const grid = document.getElementById('grid');
+
+  function showList() {
+    listView.style.display = '';
+    detailView.style.display = 'none';
+    window.location.hash = '';
+    document.title = 'PPT Master - Template Gallery';
+    window.scrollTo(0, 0);
+  }
+
+  function showDetail(id) {
+    const t = templates[id];
+    if (!t) return;
+    listView.style.display = 'none';
+    detailView.style.display = '';
+    window.location.hash = 'detail-' + id;
+    document.title = t.label + ' - Template Gallery';
+
+    detailTitle.textContent = t.label;
+    detailMeta.textContent = t.summary;
+
+    // Build slides
+    let layers = '', thumbs = '';
+    t.slides.forEach((s, i) => {
+      const active = i === 0 ? ' active' : '';
+      layers += '<div class="slide-layer' + active + '">' + s.svg + '</div>';
+      thumbs += '<div class="strip-item' + active + '" data-idx="' + i + '">' +
+        '<div class="strip-thumb">' + s.svg + '</div>' +
+        '<div class="strip-label">' + s.label + '</div></div>';
+    });
+
+    const paletteDots = (t.colors || []).map(c =>
+      '<span class="palette-dot" style="background:' + c + '" title="' + c + '"></span>'
+    ).join('');
+
+    detailBody.innerHTML =
+      '<div class="viewer">' +
+        '<div class="stage-wrap">' +
+          '<div class="stage">' + layers + '</div>' +
+          '<button class="arrow prev">&#10094;</button>' +
+          '<button class="arrow next">&#10095;</button>' +
+          '<div class="page-counter">1 / ' + t.slides.length + '</div>' +
+        '</div>' +
+        '<div class="strip">' + thumbs + '</div>' +
+      '</div>' +
+      '<div class="detail-info">' +
+        '<h3>About this template</h3>' +
+        '<div class="info-row"><span class="label">ID:</span> ' + id + '</div>' +
+        '<div class="info-row"><span class="label">Summary:</span> ' + t.summary + '</div>' +
+        '<div class="info-row"><span class="label">Palette:</span> ' + paletteDots + '</div>' +
+        '<div class="info-row"><span class="label">Keywords:</span> ' + (t.keywords || []).join(', ') + '</div>' +
+      '</div>';
+
+    // Wire up slide viewer
+    const layersEls = detailBody.querySelectorAll('.slide-layer');
+    const thumbsEls = detailBody.querySelectorAll('.strip-item');
+    const prevBtn = detailBody.querySelector('.arrow.prev');
+    const nextBtn = detailBody.querySelector('.arrow.next');
+    const counter = detailBody.querySelector('.page-counter');
+    let idx = 0;
+    const total = layersEls.length;
+
+    function show(i) {
       if (i < 0) i = 0;
       if (i >= total) i = total - 1;
       idx = i;
-      layers.forEach((el, n) => el.classList.toggle('active', n === idx));
-      thumbs.forEach((el, n) => el.classList.toggle('active', n === idx));
+      layersEls.forEach((el, n) => el.classList.toggle('active', n === idx));
+      thumbsEls.forEach((el, n) => el.classList.toggle('active', n === idx));
       if (prevBtn) prevBtn.disabled = idx === 0;
       if (nextBtn) nextBtn.disabled = idx === total - 1;
       if (counter) counter.textContent = (idx + 1) + ' / ' + total;
-      // scroll active thumb into view
-      const activeThumb = thumbs[idx];
-      if (activeThumb) activeThumb.scrollIntoView({{ behavior: 'smooth', inline: 'center', block: 'nearest' }});
-    }}
-
+      const activeThumb = thumbsEls[idx];
+      if (activeThumb) activeThumb.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
     if (prevBtn) prevBtn.addEventListener('click', () => show(idx - 1));
     if (nextBtn) nextBtn.addEventListener('click', () => show(idx + 1));
-    thumbs.forEach((t, n) => t.addEventListener('click', () => show(n)));
+    thumbsEls.forEach(el => el.addEventListener('click', () => show(+el.dataset.idx)));
     show(0);
-  }});
+    window.scrollTo(0, 0);
+  }
 
-  const search = document.getElementById('search');
-  const visible = document.getElementById('visible');
-  function update() {{
+  // Hash routing
+  function route() {
+    const hash = window.location.hash;
+    const m = hash.match(/^#detail-(.+)/);
+    if (m && templates[m[1]]) showDetail(m[1]);
+    else showList();
+  }
+  window.addEventListener('hashchange', route);
+  backBtn.addEventListener('click', showList);
+
+  // Search
+  function updateSearch() {
     const q = search.value.trim().toLowerCase();
+    const cards = grid.querySelectorAll('.list-card');
     let n = 0;
-    galleries.forEach(c => {{
+    cards.forEach(c => {
       const text = c.dataset.search || '';
       const show = !q || text.includes(q);
       c.style.display = show ? '' : 'none';
       if (show) n++;
-    }});
-    visible.textContent = n;
-  }}
-  search.addEventListener('input', update);
-  update();
-}})();
+    });
+  }
+  search.addEventListener('input', updateSearch);
+
+  // Initial route
+  route();
+})();
 </script>
 </body>
 </html>
 """
 
 
-def _hex_color_from_text(text: str) -> str | None:
-    match = re.search(r"#(?:[0-9a-fA-F]{3}){1,2}\b", text)
-    return match.group(0).upper() if match else None
-
-
-def _read_design_spec_colors(spec_path: Path) -> dict[str, str]:
-    colors: dict[str, str] = {}
-    if not spec_path.exists():
-        return colors
-    try:
-        text = spec_path.read_text(encoding="utf-8", errors="replace")
-    except Exception:
-        return colors
-    for key in ("primary", "accent", "primary_color", "theme_color"):
-        m = re.search(rf"{key}\s*[:=]\s*['\"]?(#[0-9a-fA-F]{{3,6}})['\"]?", text, re.I)
-        if m:
-            colors[key] = m.group(1).upper()
-    if not colors:
-        first = _hex_color_from_text(text)
-        if first:
-            colors["primary"] = first
-    return colors
+def _extract_colors(text: str) -> list[str]:
+    """Extract all unique HEX colors from design_spec.md text."""
+    found = re.findall(r"#(?:[0-9a-fA-F]{3}){1,2}\b", text)
+    # Preserve order, deduplicate (case-insensitive)
+    seen = set()
+    result: list[str] = []
+    for c in found:
+        upper = c.upper()
+        if upper not in seen:
+            seen.add(upper)
+            result.append(upper)
+    return result[:6]  # max 6 colors
 
 
 def _read_svg_safe(svg_path: Path) -> str:
@@ -271,50 +387,6 @@ def _svg_label(name: str) -> str:
     return SVG_LABELS.get(stem, stem.replace("_", " ").replace("-", " ").title())
 
 
-def _build_card(template_id: str, meta: dict, svg_items: list[tuple[str, str]], primary_color: str | None) -> str:
-    label = meta.get("label", template_id)
-    summary = meta.get("summary", "")
-    keywords = meta.get("keywords", [])
-    kw_html = "".join(f'<span class="keyword">{k}</span>' for k in keywords)
-    swatch = (
-        f'<div class="swatch" style="background:{primary_color}"></div>'
-        if primary_color else '<div class="swatch" style="background:#ccc"></div>'
-    )
-
-    # Build slides
-    layers_html = ""
-    thumbs_html = ""
-    for i, (lbl, svg_inline) in enumerate(svg_items):
-        active_cls = " active" if i == 0 else ""
-        layers_html += f'<div class="slide-layer{active_cls}">{svg_inline}</div>\n'
-        thumbs_html += f"""<div class="strip-item{active_cls}">
-  <div class="strip-thumb">{svg_inline}</div>
-  <div class="strip-label">{lbl}</div>
-</div>"""
-
-    search_text = " ".join([template_id, label, summary, " ".join(keywords)]).lower()
-
-    return f"""<div class="template" data-id="{template_id}" data-search="{search_text}">
-  <div class="template-header">
-    {swatch}
-    <div>
-      <div class="template-title">{label}</div>
-      <div class="template-meta">{template_id} &middot; {summary}</div>
-      <div class="keywords">{kw_html}</div>
-    </div>
-  </div>
-  <div class="viewer">
-    <div class="stage-wrap">
-      <div class="stage">{layers_html}</div>
-      <button class="arrow prev">&#10094;</button>
-      <button class="arrow next">&#10095;</button>
-      <div class="page-counter">1 / {len(svg_items)}</div>
-    </div>
-    <div class="strip">{thumbs_html}</div>
-  </div>
-</div>"""
-
-
 def generate_gallery(filter_keyword: str | None = None) -> Path:
     if not INDEX_PATH.exists():
         raise FileNotFoundError(f"Template index not found: {INDEX_PATH}")
@@ -322,7 +394,9 @@ def generate_gallery(filter_keyword: str | None = None) -> Path:
     with INDEX_PATH.open("r", encoding="utf-8") as f:
         index: dict[str, dict] = json.load(f)
 
-    cards: list[str] = []
+    list_cards: list[str] = []
+    templates_json: dict[str, dict] = {}
+
     for tid in sorted(index.keys()):
         meta = index[tid]
         template_dir = LAYOUTS_DIR / tid
@@ -335,31 +409,68 @@ def generate_gallery(filter_keyword: str | None = None) -> Path:
         if filter_keyword and filter_keyword.lower() not in search_blob:
             continue
 
-        colors = _read_design_spec_colors(template_dir / "design_spec.md")
-        primary = colors.get("primary") or colors.get("theme_color") or colors.get("accent")
+        # Read colors from design_spec.md
+        colors: list[str] = []
+        spec_path = template_dir / "design_spec.md"
+        if spec_path.exists():
+            try:
+                spec_text = spec_path.read_text(encoding="utf-8", errors="replace")
+                colors = _extract_colors(spec_text)
+            except Exception:
+                pass
 
+        # Collect SVGs
         svg_files = sorted(
             [p for p in template_dir.iterdir() if p.suffix.lower() == ".svg"],
             key=lambda p: p.name,
         )
-
-        svg_items: list[tuple[str, str]] = []
+        slides_data: list[dict] = []
+        cover_svg = ""
         for svg_path in svg_files:
             inline = _read_svg_safe(svg_path)
             if not inline:
                 continue
             lbl = _svg_label(svg_path.name)
-            svg_items.append((lbl, inline))
+            slides_data.append({"label": lbl, "svg": inline})
+            if svg_path.name == "01_cover.svg" or not cover_svg:
+                cover_svg = inline
 
-        if not svg_items:
+        if not slides_data:
             continue
 
-        cards.append(_build_card(tid, meta, svg_items, primary))
+        label = meta.get("label", tid)
+        summary = meta.get("summary", "")
+        keywords = meta.get("keywords", [])
+        kw_html = "".join(f'<span class="keyword">{k}</span>' for k in keywords)
+        palette_html = "".join(f'<span class="palette-dot" style="background:{c}" title="{c}"></span>' for c in colors)
+        search_text = " ".join([tid, label, summary, " ".join(keywords)]).lower()
+
+        list_cards.append(f"""<div class="list-card" data-search="{search_text}" onclick="window.location.hash='#detail-{tid}'">
+  <div class="list-cover-wrap">{cover_svg}</div>
+  <div class="list-body">
+    <div class="list-title">{label}</div>
+    <div class="list-desc">{summary}</div>
+    <div class="palette">{palette_html}</div>
+    <div class="keywords">{kw_html}</div>
+  </div>
+</div>""")
+
+        templates_json[tid] = {
+            "label": label,
+            "summary": summary,
+            "keywords": keywords,
+            "colors": colors,
+            "slides": slides_data,
+        }
+
+    # Escape JSON for inline JS
+    import json as _json
+    json_str = _json.dumps(templates_json, ensure_ascii=False)
 
     html = HTML_TEMPLATE.format(
-        cards="\n".join(cards),
-        count=len(cards),
-        filter_value=(filter_keyword or "").replace('"', '&quot;'),
+        list_cards="\n".join(list_cards),
+        templates_json=json_str,
+        filter_value=(filter_keyword or "").replace('"', '\&quot;'),
     )
 
     fd, tmp_path = tempfile.mkstemp(prefix="ppt_master_gallery_", suffix=".html")
