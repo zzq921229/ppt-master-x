@@ -357,44 +357,103 @@ Recorded narration:
         for warning in validate_animation_config(project_path, animation_config):
             print(f"  [warn] {warning}")
 
+    # Load animation defaults from spec_lock.md (lowest priority after hard-coded)
+    def _load_spec_lock_animations(project_path: Path) -> dict[str, dict]:
+        spec_path = project_path / "spec_lock.md"
+        if not spec_path.exists():
+            return {}
+        try:
+            text = spec_path.read_text(encoding="utf-8", errors="replace")
+        except Exception:
+            return {}
+        m = re.search(r"## animation_defaults\s*\n(.*?)(?=\n## |\Z)", text, re.S)
+        if not m:
+            return {}
+        raw: dict[str, str | float] = {}
+        for line in m.group(1).strip().splitlines():
+            line = line.strip()
+            if not line.startswith("-"):
+                continue
+            line = line.lstrip("-").strip()
+            if ":" not in line:
+                continue
+            key, val = line.split(":", 1)
+            key = key.strip()
+            val = val.strip()
+            # Try numeric
+            try:
+                val_parsed: str | float = float(val)
+            except ValueError:
+                val_parsed = val
+            raw[key] = val_parsed
+
+        return {
+            "transition": {
+                "effect": raw.get("transition_effect", "fade"),
+                "duration": raw.get("transition_duration", 0.4),
+            },
+            "animation": {
+                "effect": raw.get("animation_effect", "mixed"),
+                "duration": raw.get("animation_duration", 0.4),
+                "stagger": raw.get("animation_stagger", 0.5),
+                "trigger": raw.get("animation_trigger", "after-previous"),
+            },
+        }
+
+    spec_lock_defaults = _load_spec_lock_animations(project_path)
+    spec_transition_defaults = spec_lock_defaults.get("transition", {})
+    spec_animation_defaults = spec_lock_defaults.get("animation", {})
+
+    # Priority chain: CLI > animations.json > spec_lock.md > hard-coded
     defaults = animation_config.get('defaults', {}) if animation_config else {}
-    transition_defaults = defaults.get('transition', {}) if isinstance(defaults, dict) else {}
-    animation_defaults = defaults.get('animation', {}) if isinstance(defaults, dict) else {}
+    file_transition_defaults = defaults.get('transition', {}) if isinstance(defaults, dict) else {}
+    file_animation_defaults = defaults.get('animation', {}) if isinstance(defaults, dict) else {}
+
+    transition_defaults = {
+        "effect": file_transition_defaults.get("effect") or spec_transition_defaults.get("effect", "fade"),
+        "duration": file_transition_defaults.get("duration") if file_transition_defaults.get("duration") is not None else spec_transition_defaults.get("duration", 0.4),
+    }
+    animation_defaults = {
+        "effect": file_animation_defaults.get("effect") or spec_animation_defaults.get("effect", "mixed"),
+        "duration": file_animation_defaults.get("duration") if file_animation_defaults.get("duration") is not None else spec_animation_defaults.get("duration", 0.4),
+        "stagger": file_animation_defaults.get("stagger") if file_animation_defaults.get("stagger") is not None else spec_animation_defaults.get("stagger", 0.5),
+        "trigger": file_animation_defaults.get("trigger") or spec_animation_defaults.get("trigger", "after-previous"),
+    }
 
     transition_arg = args.transition
     transition_effect = (
         transition_arg
         if transition_arg is not None
-        else transition_defaults.get('effect', 'fade')
+        else transition_defaults['effect']
     )
     transition = None if transition_effect == 'none' else transition_effect
     transition_duration = (
         args.transition_duration
         if args.transition_duration is not None
-        else float(transition_defaults.get('duration', 0.4))
+        else float(transition_defaults['duration'])
     )
 
     animation_arg = args.animation
     animation_effect = (
         animation_arg
         if animation_arg is not None
-        else animation_defaults.get('effect', 'mixed')
+        else animation_defaults['effect']
     )
     animation = None if animation_effect == 'none' else animation_effect
     animation_duration = (
         args.animation_duration
         if args.animation_duration is not None
-        else float(animation_defaults.get('duration', 0.4))
+        else float(animation_defaults['duration'])
     )
     animation_stagger = (
         args.animation_stagger
         if args.animation_stagger is not None
-        else float(animation_defaults.get('stagger', 0.5))
+        else float(animation_defaults['stagger'])
     )
     animation_trigger = (
         args.animation_trigger
         if args.animation_trigger is not None
-        else animation_defaults.get('trigger', 'after-previous')
+        else animation_defaults['trigger']
     )
 
     animation_cli_overrides = {

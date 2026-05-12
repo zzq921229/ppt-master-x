@@ -291,6 +291,21 @@ One speaker note file per page, saved to `notes/`:
 
 ---
 
+## XII. Animation & Transition Preferences
+
+> Written by Strategist during Ten Confirmations (item j). Omitted when the deck requires no animation.
+
+| Property | Value |
+|----------|-------|
+| **Preset** | [Minimal / Standard / Cinematic / Custom] |
+| **Transition effect** | [fade / push / wipe / split / strips / cover / random / none] |
+| **Transition duration** | [e.g., 0.3s] |
+| **Entrance animation effect** | [mixed / fade / fly / zoom / wipe / none / ...] |
+| **Animation trigger** | [after-previous / with-previous / on-click] |
+| **Animation stagger** | [e.g., 0.5s] |
+
+---
+
 ## XI. Technical Constraints Reminder
 
 ### SVG Generation Must Follow:

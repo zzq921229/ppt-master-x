@@ -18,11 +18,11 @@ As a top-tier AI presentation strategist, receive source documents, perform cont
 
 ---
 
-## 1. Eight Confirmations Process
+## 1. Ten Confirmations Process
 
 🚧 **GATE — Mandatory read first**: `read_file templates/design_spec_reference.md` before any analysis or writing. The design_spec.md output MUST follow that template's 11-section structure exactly. After writing, self-check each section is present: I Project Info → II Canvas → III Visual Theme → IV Typography → V Layout → VI Icon → VII Visualization → VIII Image → IX Outline → X Speaker Notes → XI Tech Constraints.
 
-⛔ **BLOCKING**: After the read, present professional recommendations for the nine items below as a bundled package and wait for explicit user confirmation.
+⛔ **BLOCKING**: After the read, present professional recommendations for the ten items below as a bundled package and wait for explicit user confirmation.
 
 > **Execution discipline**: This is the last BLOCKING checkpoint in the pipeline. After confirmation, complete the Design Spec and proceed to image generation / SVG / post-processing without further pauses.
 
@@ -50,6 +50,11 @@ As a top-tier AI presentation strategist, receive source documents, perform cont
      - ... (reply "list all" for the full catalog)
      Reply with a template name to apply it, or say "free design" to skip.
      ```
+   - **Natural-language preview trigger**: If the user says "让我看看模板效果", "预览一下商务模板", "有哪些科技风格的模板", or any similar natural-language request → automatically run the preview command and open the gallery:
+     ```bash
+     python3 ${SKILL_DIR}/scripts/project_manager.py preview-templates [extracted_keyword]
+     ```
+     Then tell the user: "已为您打开模板预览页面，请查看浏览器。看完后请告诉我您想使用哪个模板。"
    - **User picks a template by name** → apply it immediately before the remaining confirmations:
      ```bash
      python3 ${SKILL_DIR}/scripts/project_manager.py init <project_name> --format <confirmed_format> --template <name>
@@ -370,12 +375,54 @@ Side-by-side only: container ratio must match image ratio. Hero / atmosphere / a
 
 > **Pipeline handoff**: When C) AI generation is selected, Image_Generator consumes `Pending` rows and updates them to `Generated` or `Needs-Manual` before Executor proceeds. Status names are defined in [`svg-image-embedding.md`](svg-image-embedding.md).
 
+### j. Transition & Animation Style Confirmation
+
+**Last confirmation — quick preset selection, no granular tuning.**
+
+Strategist **auto-recommends** a preset based on already-confirmed items (style objective + target audience + use case). Present the recommendation as a single line; the user replies "ok" to accept or names another preset.
+
+| Preset | Transition | Entrance Animation | Auto-recommend triggers |
+|--------|-----------|-------------------|------------------------|
+| **Minimal** | `fade` (0.3s) or `none` | `none` or `fade` | Government / academic / data-heavy / formal briefing audiences |
+| **Standard** | `fade` (0.4s) | `mixed` (auto-vary) | General training / product sharing / internal team presentations |
+| **Cinematic** | `push` / `wipe` / `cover` (0.5s) | `fly` / `zoom` / `wipe` | Keynote / launch event / brand storytelling / pitch decks |
+| **Custom** | user-specified | user-specified | When the user explicitly names a specific effect |
+
+**Recommendation logic**:
+```
+Audience / scenario?
+  ├── Government / academic / board report / data-intensive ──→ Minimal
+  ├── Internal team / training / routine update ──────────────→ Standard
+  └── Launch / keynote / pitch / brand story / public speech ─→ Cinematic
+```
+
+**Presentation format**:
+```
+[j. Transition & Animation] Based on your "General Consulting" style and "management team" audience, I recommend:
+→ Minimal: fade transition only, no entrance animations (clean and professional).
+Reply "ok" to accept, or pick: standard / cinematic / custom / none.
+```
+
+**Output to design_spec.md**: record in new section **XII. Animation & Transition Preferences** (transition effect, duration, entrance effect, trigger, stagger).
+
+**Output to spec_lock.md**: record under `animation_defaults`:
+```yaml
+## animation_defaults
+- transition_effect: fade
+- transition_duration: 0.3
+- animation_effect: none
+- animation_trigger: after-previous
+- animation_stagger: 0.0
+```
+
+> **Priority at export**: Explicit CLI flags (`-t`, `-a`) > `animations.json` sidecar > `spec_lock.md animation_defaults` > hard-coded defaults.
+
 ### Visualization Reference (Non-blocking — Strategist recommends, no user confirmation needed)
 
 When content outline pages involve **data visualization or infographic-style structured information design** (comparisons, trends, proportions, KPIs, flows, timelines, org structures, strategic frameworks, etc.), Strategist should select appropriate visualization types from the built-in template library.
 
 > **Reading is mandatory; the catalog is a starting point, not a copy target.**
-> - Fully read `templates/charts/charts_index.json` **before drafting the Eight Confirmations** — the read happens up front, not when you sit down to write Section VII. Each `summary` is a selection rule (`"Pick for … Skip if …"`), not a description.
+> - Fully read `templates/charts/charts_index.json` **before drafting the Ten Confirmations** — the read happens up front, not when you sit down to write Section VII. Each `summary` is a selection rule (`"Pick for … Skip if …"`), not a description.
 > - Not every page needs a chart. When a page's information structure matches a catalog entry, **use that template as a structural starting point** — keep the visualization type and core layout logic, then adapt composition, density, color, decoration, and accompanying elements to fit this deck's content and visual tone. Free adjustment is encouraged; what is forbidden is (a) generating without reading the catalog, and (b) blind verbatim mimicry that ignores the page's actual content weight.
 >
 > **Workflow**:

@@ -7,6 +7,7 @@ Usage:
     python3 scripts/project_manager.py validate <project_path>
     python3 scripts/project_manager.py info <project_path>
     python3 scripts/project_manager.py list-templates [--json]
+    python3 scripts/project_manager.py preview-templates [filter_keyword]
 """
 
 from __future__ import annotations
@@ -799,6 +800,22 @@ def main() -> None:
         if command == "list-templates":
             output_json = "--json" in sys.argv
             ProjectManager.list_templates(output_json=output_json)
+            return
+
+        if command == "preview-templates":
+            try:
+                from template_gallery import open_gallery
+            except ImportError:
+                tools_dir = Path(__file__).resolve().parent
+                if str(tools_dir) not in sys.path:
+                    sys.path.insert(0, str(tools_dir))
+                from template_gallery import open_gallery  # type: ignore
+
+            filter_keyword = sys.argv[2] if len(sys.argv) > 2 else None
+            path = open_gallery(filter_keyword=filter_keyword)
+            print(f"[OK] Gallery opened in browser: {path}")
+            if filter_keyword:
+                print(f"[INFO] Filter keyword: {filter_keyword}")
             return
 
         if command == "import-sources":

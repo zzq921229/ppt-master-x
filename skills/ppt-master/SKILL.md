@@ -181,11 +181,11 @@ Read references/strategist.md
 
 > ⚠️ **Mandatory gate**: before writing `design_spec.md`, Strategist MUST `read_file templates/design_spec_reference.md` and follow its full I–XI section structure. See `strategist.md` Section 1.
 
-**Eight Confirmations** (full template: `templates/design_spec_reference.md`):
+**Ten Confirmations** (full template: `templates/design_spec_reference.md`):
 
-⛔ **BLOCKING**: present the Eight Confirmations as a single bundled recommendation set and **wait for explicit user confirmation or modification** before outputting Design Specification & Content Outline. This is the single core confirmation point — once confirmed, all subsequent steps proceed automatically.
+⛔ **BLOCKING**: present the Ten Confirmations as a single bundled recommendation set and **wait for explicit user confirmation or modification** before outputting Design Specification & Content Outline. This is the single core confirmation point — once confirmed, all subsequent steps proceed automatically.
 
-1. **Template selection** — check whether a template was already applied in Step 2 (`--template`) or Step 3 (explicit path). If yes, confirm it. If not, query `layouts_index.json`, present available built-in templates by name + one-line summary, and ask the user to pick one or choose free design.
+1. **Template selection** — check whether a template was already applied in Step 2 (`--template`) or Step 3 (explicit path). If yes, confirm it. If not, query `layouts_index.json`, present available built-in templates by name + one-line summary, and ask the user to pick one or choose free design. If the user wants to preview templates visually, run `python3 ${SKILL_DIR}/scripts/project_manager.py preview-templates [filter]` and open the gallery in their browser.
 2. Canvas format
 3. Page count range
 4. Target audience
@@ -194,6 +194,7 @@ Read references/strategist.md
 7. Icon usage approach
 8. Typography plan
 9. Image usage approach
+10. **Transition & animation style** — Strategist auto-recommends a preset (Minimal / Standard / Cinematic) based on the confirmed style objective and target audience. The choice is written to `spec_lock.md` under `animation_defaults` and applied automatically during export.
 
 **Mandatory — split-mode note** (not a ninth confirmation): after listing the eight confirmation details, you MUST append exactly one short line (rendered in the user's language, prefixed with 💡) about generation mode. Pick the variant by qualitative read of Phase A signals — recommended page count, source-material bulk, whether `topic-research` ran with substantial web-fetch accumulation:
 
@@ -218,8 +219,8 @@ python3 ${SKILL_DIR}/scripts/analyze_images.py <project_path>/images
 **✅ Checkpoint — Phase deliverables complete, auto-proceed to next step**:
 ```markdown
 ## ✅ Strategist Phase Complete
-- [x] Eight Confirmations completed (user confirmed)
-- [x] Split-mode note appended below the eight items (heavy or normal variant)
+- [x] Ten Confirmations completed (user confirmed)
+- [x] Split-mode note appended below the ten items (heavy or normal variant)
 - [x] Design Specification & Content Outline generated
 - [x] Execution lock (spec_lock.md) generated
 - [ ] **Next**: Auto-proceed to [Image_Generator / Executor] phase
@@ -370,6 +371,8 @@ python3 ${SKILL_DIR}/scripts/svg_to_pptx.py <project_path>
 - `--animation-trigger {on-click,with-previous,after-previous}` — Start mode (matches PowerPoint's animation-pane Start dropdown). Default `after-previous` (click-free cascade; pace via `--animation-stagger`). Use `on-click` for presenter-paced reveals, or `with-previous` for all-at-once.
 - `--animation-config <path>` — optional object-level sidecar. Default: `<project_path>/animations.json` when present.
 - `--auto-advance <seconds>` — kiosk-style auto-play.
+
+> **Auto-application from spec_lock**: If `spec_lock.md` contains an `animation_defaults` section (written by the Strategist during Ten Confirmations), `svg_to_pptx.py` applies those values automatically. Explicit CLI flags override `spec_lock.md`; `animations.json` overrides both.
 
 **Optional custom animations** (only when the user asks to tune animation order/effects/timing for specific objects):
 

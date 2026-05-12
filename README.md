@@ -186,6 +186,16 @@ Or use the built-in CLI helper to list all templates:
 python3 skills/ppt-master/scripts/project_manager.py list-templates
 ```
 
+Preview templates visually in your browser (zero external dependencies — SVGs render directly):
+
+```bash
+# Show all templates
+python3 skills/ppt-master/scripts/project_manager.py preview-templates
+
+# Filter by keyword (e.g., tech, business, government)
+python3 skills/ppt-master/scripts/project_manager.py preview-templates tech
+```
+
 And initialize a project with a template directly:
 
 ```bash
@@ -203,6 +213,8 @@ AI:  Sure. Let's confirm the design spec:
 ```
 
 The AI handles everything — content analysis, visual design, SVG generation, and PPTX export.
+
+> **Animations & Transitions** — The AI automatically recommends a transition/animation preset (Minimal / Standard / Cinematic) based on your content and audience during the design confirmation phase. The chosen style is written to `spec_lock.md` and applied automatically during export. You can override it at any time by passing CLI flags such as `-t none` or `-a fade` to `svg_to_pptx.py`.
 
 > **Output:** Main native-shapes `.pptx` (directly editable) saved to `exports/<name>_<timestamp>.pptx`. The SVG snapshot `_svg.pptx` and a copy of `svg_output/` are archived to `backup/<timestamp>/` for visual reference and pptx rebuild without re-running the LLM. Requires Office 2016+.
 

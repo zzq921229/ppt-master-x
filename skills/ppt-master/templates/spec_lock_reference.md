@@ -120,6 +120,16 @@
 >
 > **Strategist source**: copy from `design_spec.md §VII Visualization Reference List` — only the rows whose `reference template path` points to a `templates/charts/` file. Pages marked `no-template-match` in §VII MUST NOT appear here.
 
+## animation_defaults
+- transition_effect: fade
+- transition_duration: 0.4
+- animation_effect: mixed
+- animation_trigger: after-previous
+- animation_stagger: 0.5
+
+> Strategist: fill only when item j (Transition & Animation) was confirmed. Omit the entire section to use hard-coded defaults (`fade` + `mixed`).
+> `svg_to_pptx.py` reads this section automatically; explicit CLI flags (`-t`, `-a`) override it, and `animations.json` overrides both.
+
 ## forbidden
 - Mixing icon libraries
 - rgba()
