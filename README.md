@@ -216,7 +216,10 @@ The AI handles everything — content analysis, visual design, SVG generation, a
 
 > **Animations & Transitions** — The AI automatically recommends a transition/animation preset (Minimal / Standard / Cinematic) based on your content and audience during the design confirmation phase. The chosen style is written to `spec_lock.md` and applied automatically during export. You can override it at any time by passing CLI flags such as `-t none` or `-a fade` to `svg_to_pptx.py`.
 
-> **Output:** Main native-shapes `.pptx` (directly editable) saved to `exports/<name>_<timestamp>.pptx`. The SVG snapshot `_svg.pptx` and a copy of `svg_output/` are archived to `backup/<timestamp>/` for visual reference and pptx rebuild without re-running the LLM. Requires Office 2016+.
+> **Output:** Main native-shapes `.pptx` (directly editable) is saved in two places for convenience:
+> - `<project_path>/<name>.pptx` — latest version, overwritten on each export, easy to find
+> - `exports/<name>_<timestamp>.pptx` — archived version with timestamp, never overwritten
+> The SVG snapshot `_svg.pptx` and a copy of `svg_output/` are archived to `backup/<timestamp>/` for visual reference and pptx rebuild without re-running the LLM. Requires Office 2016+.
 
 > **AI lost context?** Ask it to read `skills/ppt-master/SKILL.md`.
 

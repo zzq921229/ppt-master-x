@@ -260,16 +260,22 @@ Recorded narration:
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     backup_dir: Path | None = None
+    root_output: Path | None = None
     if args.output:
         output_base = Path(args.output)
         native_path = output_base
         stem = output_base.stem
         legacy_path = output_base.parent / f"{stem}_svg{output_base.suffix}"
     else:
+        # Archive version with timestamp under exports/
         exports_dir = project_path / "exports"
         exports_dir.mkdir(parents=True, exist_ok=True)
         native_path = exports_dir / f"{project_name}_{timestamp}.pptx"
 
+        # Also place a copy directly in the project root for easy discovery
+        root_output = project_path / f"{project_name}.pptx"
+
+        # Backup archive (SVG snapshot + source backup) stays under backup/
         backup_dir = project_path / "backup" / timestamp
         backup_dir.mkdir(parents=True, exist_ok=True)
         legacy_path = backup_dir / f"{project_name}_svg.pptx"
@@ -528,6 +534,16 @@ Recorded narration:
             **shared_kwargs,
         )
         success = success and ok
+
+        # Copy the latest native pptx to the project root for easy access
+        if ok and root_output is not None:
+            try:
+                shutil.copy2(native_path, root_output)
+                if verbose:
+                    print(f"  Project root copy: {root_output}")
+            except Exception as exc:
+                if verbose:
+                    print(f"  [warn] Failed to copy to project root: {exc}")
 
     # --- SVG image reference version ---
     if gen_legacy:

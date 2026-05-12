@@ -352,9 +352,10 @@ python3 ${SKILL_DIR}/scripts/finalize_svg.py <project_path>
 ```bash
 python3 ${SKILL_DIR}/scripts/svg_to_pptx.py <project_path>
 # Output:
-#   exports/<project_name>_<timestamp>.pptx           ← main native pptx (reads svg_output/, high fidelity)
-#   backup/<timestamp>/<project_name>_svg.pptx        ← SVG preview pptx (reads svg_final/)
-#   backup/<timestamp>/svg_output/                    ← Executor SVG source backup
+#   <project_path>/<project_name>.pptx                 ← latest native pptx (convenient access, overwritten on each export)
+#   exports/<project_name>_<timestamp>.pptx            ← archived native pptx (timestamped, never overwritten)
+#   backup/<timestamp>/<project_name>_svg.pptx         ← SVG preview pptx (reads svg_final/)
+#   backup/<timestamp>/svg_output/                     ← Executor SVG source backup
 ```
 
 > The two products now read from different sources by design: native pptx
