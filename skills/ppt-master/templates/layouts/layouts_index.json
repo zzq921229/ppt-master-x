@@ -1,153 +1,152 @@
 {
   "academic_defense": {
-    "summary": "Thesis defense, academic presentations, research progress reports, grant applications.",
+    "summary": "论文答辩、学术报告、研究进展汇报、基金申请。",
     "keywords": [
-      "Professional",
-      "rigorous",
-      "research-oriented",
-      "clear hierarchy"
+      "专业严谨",
+      "研究导向",
+      "层次清晰"
     ]
   },
   "ai_ops": {
-    "summary": "Telecom AI operations architecture, IT system overviews, digital transformation proposals, smart infrastructure reports.",
+    "summary": "电信AI运维架构、IT系统概览、数字化转型方案、智能基础设施报告。",
     "keywords": [
-      "Information-dense",
-      "structured",
-      "modular zoning",
-      "telecom",
-      "enterprise style"
+      "信息密集",
+      "结构化",
+      "模块化分区",
+      "电信",
+      "企业风格"
     ]
   },
   "anthropic": {
-    "summary": "AI tech talks, developer conferences, technical training, product launches.",
+    "summary": "AI技术演讲、开发者大会、技术培训、产品发布。",
     "keywords": [
-      "Tech-forward",
-      "professional",
-      "modern",
-      "conclusion-first"
+      "科技前沿",
+      "专业",
+      "现代",
+      "结论先行"
     ]
   },
   "china_telecom_template": {
-    "summary": "China Telecom related briefings, 政企数字化方案, 转型规划, 内部汇报.",
+    "summary": "中国电信相关汇报、政企数字化方案、转型规划、内部汇报。",
     "keywords": [
-      "Authoritative",
-      "structured",
-      "restrained",
-      "enterprise-government hybrid"
+      "权威",
+      "结构化",
+      "克制",
+      "政企融合"
     ]
   },
   "google_style": {
-    "summary": "Annual work reports, technical sharing, project showcases, data-driven presentations.",
+    "summary": "年度工作报告、技术分享、项目展示、数据驱动演示。",
     "keywords": [
-      "Professional",
-      "modern",
-      "clean and restrained",
-      "data-driven",
-      "generous whitespace"
+      "专业",
+      "现代",
+      "简洁克制",
+      "数据驱动",
+      "留白大气"
     ]
   },
   "government_blue": {
-    "summary": "Key project briefings, Five-Year Plan presentations, work summaries, investment promotion, policy interpretation.",
+    "summary": "重点项目汇报、五年规划演示、工作总结、招商引资、政策解读。",
     "keywords": [
-      "Grand",
-      "tech-forward",
-      "modern",
-      "professional government style"
+      "大气",
+      "科技前沿",
+      "现代",
+      "专业政务风"
     ]
   },
   "government_red": {
-    "summary": "Government briefings, policy interpretation, work summaries, project introductions, investment promotion.",
+    "summary": "政府汇报、政策解读、工作总结、项目介绍、招商引资。",
     "keywords": [
-      "Authoritative",
-      "dignified",
-      "professional",
-      "modern government style"
+      "权威",
+      "庄重",
+      "专业",
+      "现代政务风"
     ]
   },
   "medical_university": {
-    "summary": "Medical academic reports, case discussions, research presentations, hospital work reports, medical education and training.",
+    "summary": "医学学术报告、病例讨论、研究汇报、医院工作报告、医学教育培训。",
     "keywords": [
-      "Professional",
-      "rigorous",
-      "life-affirming",
-      "tech-forward",
-      "trustworthy"
+      "专业",
+      "严谨",
+      "生命关怀",
+      "科技前沿",
+      "值得信赖"
     ]
   },
   "pixel_retro": {
-    "summary": "Tech talks, programming tutorials, game introductions, geek-style showcases.",
+    "summary": "技术演讲、编程教程、游戏介绍、极客风格展示。",
     "keywords": [
-      "Retro gaming",
-      "neon cyberpunk",
-      "geek tech",
-      "8-bit style"
+      "复古游戏",
+      "霓虹赛博朋克",
+      "极客科技",
+      "8位像素风"
     ]
   },
   "psychology_attachment": {
-    "summary": "Psychotherapy training, academic lectures, counseling case analysis, professional sharing.",
+    "summary": "心理治疗培训、学术讲座、咨询案例分析、专业分享。",
     "keywords": [
-      "Professional",
-      "warm",
-      "healing",
-      "trustworthy"
+      "专业",
+      "温暖",
+      "治愈",
+      "值得信赖"
     ]
   },
   "中国电建_常规": {
-    "summary": "Engineering project reports, technical proposal presentations, business negotiations, corporate promotion, annual summaries.",
+    "summary": "工程项目报告、技术方案演示、商务谈判、企业宣传、年度总结。",
     "keywords": [
-      "Professional",
-      "composed",
-      "international",
-      "state-owned enterprise style"
+      "专业",
+      "沉稳",
+      "国际化",
+      "国企风格"
     ]
   },
   "中国电建_现代": {
-    "summary": "Major engineering reports, international market promotion, technology achievement showcases, high-end business negotiations.",
+    "summary": "重大工程报告、国际市场推广、科技成果展示、高端商务谈判。",
     "keywords": [
-      "Grand narrative",
-      "modern precision",
-      "digital tech",
-      "international vision"
+      "宏大叙事",
+      "现代精密",
+      "数字科技",
+      "国际视野"
     ]
   },
   "中汽研_商务": {
-    "summary": "Product certification display, evaluation presentations, technology promotion, high-end business reporting.",
+    "summary": "产品认证展示、评测演示、技术推广、高端商务汇报。",
     "keywords": [
-      "Modern tech",
-      "authoritative & professional",
-      "composed & grand"
+      "现代科技",
+      "权威专业",
+      "沉稳大气"
     ]
   },
   "中汽研_常规": {
-    "summary": "Product certification display, evaluation presentations, technology promotion, business visits.",
+    "summary": "产品认证展示、评测演示、技术推广、商务考察。",
     "keywords": [
-      "Professional",
-      "authoritative",
-      "trustworthy",
-      "consulting style"
+      "专业",
+      "权威",
+      "值得信赖",
+      "咨询风格"
     ]
   },
   "中汽研_现代": {
-    "summary": "Forward-looking technology showcases, strategic releases, high-end business reporting.",
+    "summary": "前瞻性技术展示、战略发布、高端商务汇报。",
     "keywords": [
-      "Futuristic",
-      "tech-forward",
-      "deep & refined"
+      "未来感",
+      "科技前沿",
+      "深邃精炼"
     ]
   },
   "招商银行": {
-    "summary": "交易银行产品介绍、销售收款方案汇报、客户案例拆解、分行培训材料.",
+    "summary": "交易银行产品介绍、销售收款方案汇报、客户案例拆解、分行培训材料。",
     "keywords": [
-      "Brand-consistent",
-      "structured",
-      "product-focused",
-      "refined finance"
+      "品牌一致",
+      "结构化",
+      "产品导向",
+      "精致金融"
     ]
   },
   "重庆大学": {
-    "summary": "Academic defense, research reports, teaching presentations, scholarly exchange.",
+    "summary": "学术答辩、研究报告、教学演示、学术交流。",
     "keywords": [
-      "Academically grounded · Mountain City charm · Modern minimalism"
+      "学术底蕴 · 山城韵味 · 现代简约"
     ]
   }
 }

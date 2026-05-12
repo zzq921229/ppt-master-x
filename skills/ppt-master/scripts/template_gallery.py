@@ -24,11 +24,11 @@ LAYOUTS_DIR = SKILL_DIR / "templates" / "layouts"
 INDEX_PATH = LAYOUTS_DIR / "layouts_index.json"
 
 SVG_LABELS: dict[str, str] = {
-    "01_cover": "Cover",
-    "02_toc": "TOC",
-    "02_chapter": "Chapter",
-    "03_content": "Content",
-    "04_ending": "Ending",
+    "01_cover": "封面",
+    "02_toc": "目录",
+    "02_chapter": "章节",
+    "03_content": "内容",
+    "04_ending": "结尾",
 }
 
 HTML_TEMPLATE = """<!DOCTYPE html>
@@ -36,7 +36,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PPT Master - Template Gallery</title>
+<title>PPT Master - 模板画廊</title>
 <style>
   :root {
     --bg: #f4f6f9;
@@ -208,10 +208,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <!-- LIST VIEW -->
 <div id="list-view">
   <div class="site-header">
-    <h1>Template Gallery</h1>
-    <p>Browse 17 built-in themes. Click any card to explore the full slide deck.</p>
+    <h1>模板画廊</h1>
+    <p>浏览 17 款内置主题。点击任意卡片即可查看完整幻灯片。</p>
     <div class="search-bar">
-      <input type="text" id="search" placeholder="Search templates, styles, keywords..." value="{filter_value}">
+      <input type="text" id="search" placeholder="搜索模板、风格、关键词..." value="{filter_value}">
     </div>
   </div>
   <div class="grid" id="grid">
@@ -222,7 +222,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <!-- DETAIL VIEW -->
 <div id="detail-view">
   <div class="detail-header">
-    <button class="back-btn" id="back-btn">&#10094; Back to Gallery</button>
+    <button class="back-btn" id="back-btn">&#10094; 返回画廊</button>
     <span class="detail-title" id="detail-title">Template</span>
     <span class="detail-meta" id="detail-meta"></span>
   </div>
@@ -248,7 +248,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     listView.style.display = 'block';
     detailView.style.display = 'none';
     window.location.hash = '';
-    document.title = 'PPT Master - Template Gallery';
+    document.title = 'PPT Master - 模板画廊';
     window.scrollTo(0, 0);
   }
 
@@ -258,7 +258,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     listView.style.display = 'none';
     detailView.style.display = 'block';
     window.location.hash = 'detail-' + id;
-    document.title = t.label + ' - Template Gallery';
+    document.title = t.label + ' - 模板画廊';
 
     detailTitle.textContent = t.label;
     detailMeta.textContent = t.summary;
@@ -288,11 +288,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         '<div class="strip">' + thumbs + '</div>' +
       '</div>' +
       '<div class="detail-info">' +
-        '<h3>About this template</h3>' +
-        '<div class="info-row"><span class="label">ID:</span> ' + id + '</div>' +
-        '<div class="info-row"><span class="label">Summary:</span> ' + t.summary + '</div>' +
-        '<div class="info-row"><span class="label">Palette:</span> ' + paletteDots + '</div>' +
-        '<div class="info-row"><span class="label">Keywords:</span> ' + (t.keywords || []).join(', ') + '</div>' +
+        '<h3>关于此模板</h3>' +
+        '<div class="info-row"><span class="label">模板ID：</span> ' + id + '</div>' +
+        '<div class="info-row"><span class="label">简介：</span> ' + t.summary + '</div>' +
+        '<div class="info-row"><span class="label">配色：</span> ' + paletteDots + '</div>' +
+        '<div class="info-row"><span class="label">关键词：</span> ' + (t.keywords || []).join(', ') + '</div>' +
       '</div>';
 
     // Wire up slide viewer
