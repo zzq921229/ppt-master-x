@@ -245,7 +245,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   const grid = document.getElementById('grid');
 
   function showList() {
-    listView.style.display = '';
+    listView.style.display = 'block';
     detailView.style.display = 'none';
     window.location.hash = '';
     document.title = 'PPT Master - Template Gallery';
@@ -256,7 +256,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     const t = templates[id];
     if (!t) return;
     listView.style.display = 'none';
-    detailView.style.display = '';
+    detailView.style.display = 'block';
     window.location.hash = 'detail-' + id;
     document.title = t.label + ' - Template Gallery';
 
