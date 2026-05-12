@@ -3,11 +3,14 @@
 
 Usage:
     python3 scripts/project_manager.py init <project_name> [--format ppt169] [--dir projects] [--template <template_id>]
-    python3 scripts/project_manager.py import-sources <project_path> <source1> [<source2> ...] [--move | --copy]
+    python3 scripts/project_manager.py import-sources <project_path> <source1> [<source2> ...] [--move]
     python3 scripts/project_manager.py validate <project_path>
     python3 scripts/project_manager.py info <project_path>
     python3 scripts/project_manager.py list-templates [--json]
     python3 scripts/project_manager.py preview-templates [filter_keyword]
+
+Note: import-sources copies files by default (never touches the original).
+      Pass --move only if you explicitly want to relocate the source files.
 """
 
 from __future__ import annotations
@@ -550,13 +553,6 @@ class ProjectManager:
                 effective_move = False
             elif move:
                 effective_move = True
-            elif is_within_path(source_path, REPO_ROOT):
-                effective_move = True
-                print(
-                    f"note: {source_path} is inside the ppt-master repo; moved "
-                    f"(not copied) to avoid accidental commit. Pass --copy to override.",
-                    file=sys.stderr,
-                )
             else:
                 effective_move = False
             suffix = source_path.suffix.lower()

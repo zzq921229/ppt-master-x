@@ -129,10 +129,10 @@ Import source content (choose based on the situation):
 
 | Situation | Action |
 |-----------|--------|
-| Has source files (PDF/MD/etc.) | `python3 ${SKILL_DIR}/scripts/project_manager.py import-sources <project_path> <source_files...> --move` |
+| Has source files (PDF/MD/etc.) | `python3 ${SKILL_DIR}/scripts/project_manager.py import-sources <project_path> <source_files...>` |
 | User provided text directly in conversation | No import needed — content is already in conversation context; subsequent steps can reference it directly |
 
-> ⚠️ **MUST use `--move`** (not copy): all source files — Step 1's generated Markdown, original PDFs / MDs / images — go into `sources/` via `import-sources --move`. After execution they no longer exist at the original location. Intermediate artifacts (e.g., `_files/`) are handled automatically.
+> ⚠️ **import-sources copies by default** — your original files are never moved or deleted. A duplicate is placed into the project's `sources/` directory. Pass `--move` only if you explicitly want to relocate the originals. Intermediate artifacts (e.g., `_files/`) are handled automatically.
 
 **✅ Checkpoint — Confirm project structure created successfully, `sources/` contains all source files, converted materials are ready. Proceed to Step 3.**
 
@@ -142,14 +142,14 @@ Import source content (choose based on the situation):
 
 🚧 **GATE**: Step 2 complete; project directory structure is ready.
 
-**Default — defer to Step 4.** Do NOT query `layouts_index.json` here. Template selection is now part of the Strategist's Eight Confirmations in Step 4 — the AI will proactively ask whether to use a built-in template when presenting the confirmation bundle. Only handle explicit template paths in this step.
+**Default — defer to Step 4.** Do NOT query `layouts_index.json` here. Template selection is now part of the Strategist's Ten Confirmations in Step 4 — the AI will proactively ask whether to use a built-in template when presenting the confirmation bundle. Only handle explicit template paths in this step.
 
 **Template flow triggers on an explicit template directory path** supplied by the user in their initial message:
 
 | User input contains | Step 3 action |
 |---|---|
 | An explicit path to a template directory (e.g. `skills/ppt-master/templates/layouts/academic_defense/`, `projects/foo/template/`, or any other absolute / relative path that resolves to a directory containing `design_spec.md` and one or more page SVGs) | Copy that directory's SVGs + `design_spec.md` + assets into the project, advance |
-| Anything else — including bare template names ("用 academic_defense 模板"), style descriptions ("麦肯锡风格" / "Google style"), brand mentions ("招商银行风格"), vague intent ("想用个模板"), or silence | Skip Step 3; template selection will happen in Step 4 Eight Confirmations |
+| Anything else — including bare template names ("用 academic_defense 模板"), style descriptions ("麦肯锡风格" / "Google style"), brand mentions ("招商银行风格"), vague intent ("想用个模板"), or silence | Skip Step 3; template selection will happen in Step 4 Ten Confirmations |
 
 ```bash
 # Option A: manual copy (legacy, still valid)
@@ -162,7 +162,7 @@ cp ${TEMPLATE_DIR}/*.jpg <project_path>/images/ 2>/dev/null || true
 
 > If you used `--template <template_name>` during `project_manager.py init` in Step 2, the template files are already in place — skip the copy commands above. The Strategist will confirm the pre-applied template in Step 4.
 
-> Style descriptions ("麦肯锡风格" / "Keynote 风" / "极简风" / etc.) never trigger Step 3. They flow naturally into Strategist's Eight Confirmations as part of the user's input — Strategist uses them as a style brief when proposing color / typography / tone.
+> Style descriptions ("麦肯锡风格" / "Keynote 风" / "极简风" / etc.) never trigger Step 3. They flow naturally into Strategist's Ten Confirmations as part of the user's input — Strategist uses them as a style brief when proposing color / typography / tone.
 
 > To create a new template, read `workflows/create-template.md`.
 
