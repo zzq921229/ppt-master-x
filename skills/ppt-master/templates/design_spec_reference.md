@@ -9,6 +9,7 @@
 | Item | Value |
 | ---- | ----- |
 | **Project Name** | {project_name} |
+| **Template** | [Template name or "Free design"] |
 | **Canvas Format** | {canvas_info['name']} ({canvas_info['dimensions']}) |
 | **Page Count** | [Filled by Strategist] |
 | **Design Style** | {design_style} |

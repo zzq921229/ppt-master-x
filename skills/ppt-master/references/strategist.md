@@ -22,23 +22,63 @@ As a top-tier AI presentation strategist, receive source documents, perform cont
 
 🚧 **GATE — Mandatory read first**: `read_file templates/design_spec_reference.md` before any analysis or writing. The design_spec.md output MUST follow that template's 11-section structure exactly. After writing, self-check each section is present: I Project Info → II Canvas → III Visual Theme → IV Typography → V Layout → VI Icon → VII Visualization → VIII Image → IX Outline → X Speaker Notes → XI Tech Constraints.
 
-⛔ **BLOCKING**: After the read, present professional recommendations for the eight items below as a bundled package and wait for explicit user confirmation.
+⛔ **BLOCKING**: After the read, present professional recommendations for the nine items below as a bundled package and wait for explicit user confirmation.
 
 > **Execution discipline**: This is the last BLOCKING checkpoint in the pipeline. After confirmation, complete the Design Spec and proceed to image generation / SVG / post-processing without further pauses.
 
-### a. Canvas Format Confirmation
+### a. Template Selection Confirmation
+
+**First confirmation — always check template status before anything else.**
+
+1. **Check if template already exists in the project:**
+   - Look at `<project_path>/templates/`. If it contains `design_spec.md` and one or more `.svg` files → a template was already applied in Step 2 (`--template`) or Step 3 (explicit path).
+   - Confirm the detected template with the user: `[Template] <name> (already applied). Keep it, swap, or remove?`
+
+2. **If no template exists:**
+   - Read `${SKILL_DIR}/templates/layouts/layouts_index.json`.
+   - Present a concise list of **built-in templates** (name + one-line summary only; do NOT dump the full JSON):
+     ```
+     [Template] No template applied yet. Built-in options:
+     - academic_defense    (thesis defense, academic reports)
+     - google_style        (annual reports, tech sharing)
+     - government_red      (government briefings)
+     - government_blue     (government briefings, modern style)
+     - mckinsey            (consulting, executive briefings)
+     - exhibit             (strategic planning, board presentations)
+     - smart_red           (product launches, solution presentations)
+     - pixel_retro         (tech talks, geek style)
+     - ... (reply "list all" for the full catalog)
+     Reply with a template name to apply it, or say "free design" to skip.
+     ```
+   - **User picks a template by name** → apply it immediately before the remaining confirmations:
+     ```bash
+     python3 ${SKILL_DIR}/scripts/project_manager.py init <project_name> --format <confirmed_format> --template <name>
+     ```
+     Or copy manually if `init` was already run:
+     ```bash
+     cp ${SKILL_DIR}/templates/layouts/<name>/*.svg <project_path>/templates/
+     cp ${SKILL_DIR}/templates/layouts/<name>/design_spec.md <project_path>/templates/
+     cp ${SKILL_DIR}/templates/layouts/<name>/*.png <project_path>/images/ 2>/dev/null || true
+     ```
+   - **User says "free design" / "no" / "skip"** → mark as `Free design` and continue.
+
+3. **Template-aware downstream effects:**
+   - If a template is applied, its `design_spec.md` frontmatter (colors, fonts, keywords) **feeds into** confirmations f (Color), g (Icon), h (Typography), and i (Image) as default recommendations.
+   - If free design, use the standard recommendation logic.
+
+### b. Canvas Format Confirmation
 
 Recommend format based on scenario (see [`canvas-formats.md`](canvas-formats.md)).
 
-### b. Page Count Confirmation
+### c. Page Count Confirmation
 
 Provide specific page count recommendation based on source document content volume.
 
-### c. Key Information Confirmation
+### d. Key Information Confirmation
 
 Confirm target audience, usage occasion, and core message; provide initial assessment based on document nature.
 
-### d. Style Objective Confirmation
+### e. Style Objective Confirmation
 
 Two layers. Output: `d. Style: <Mode> + <Visual style descriptor>`.
 
@@ -66,7 +106,7 @@ Audience?
 
 #### Layer 2 — Visual style
 
-Anchors the downstream confirmations e (Color), f (Icon), g (Typography), h (Image).
+Anchors the downstream confirmations f (Color), g (Icon), h (Typography), i (Image).
 
 **Source**:
 - User named a style → record verbatim as a short descriptor (normalize multilingual phrasings to a single canonical form)
@@ -84,9 +124,9 @@ Accept user combinations and one-off coinages ("Scandinavian + slight industrial
 
 > **Template vs descriptor**: a style mention may sound like a template name ("Google style" vs the `google_style/` template directory). Step 3 only triggers on an explicit template directory path supplied by the user — bare names and style words never copy templates. If a template was triggered upstream, its files are already in `<project_path>/templates/`. Layer 2 only handles descriptors that did NOT come with a template path.
 
-**Downstream effect**: e / f / g / h values realize the Layer 2 descriptor on top of the Layer 1 mode. Example: "A) Versatile + neo-Chinese" → e leans cinnabar / ink / rice-paper; g pairs serif (KaiTi-class) with sans body; f minimal line icons; h restrained traditional imagery with negative space.
+**Downstream effect**: f / g / h / i values realize the Layer 2 descriptor on top of the Layer 1 mode. Example: "A) Versatile + neo-Chinese" → f leans cinnabar / ink / rice-paper; h pairs serif (KaiTi-class) with sans body; g minimal line icons; i restrained traditional imagery with negative space.
 
-### e. Color Scheme Recommendation
+### f. Color Scheme Recommendation
 
 Proactively provide a color scheme (HEX values) based on content characteristics and industry.
 
@@ -101,7 +141,7 @@ Proactively provide a color scheme (HEX values) based on content characteristics
 
 **Color rules**: 60-30-10 rule (primary 60%, secondary 30%, accent 10%); text contrast ratio >= 4.5:1; no more than 4 colors per page.
 
-### f. Icon Usage Confirmation
+### g. Icon Usage Confirmation
 
 | Option | Approach | Suitable Scenarios |
 |--------|----------|-------------------|
@@ -116,7 +156,7 @@ See [`../templates/icons/README.md`](../templates/icons/README.md) for the curre
 
 > **Mandatory rules when choosing C**:
 >
-> **At the eight-confirmation stage — decide the library only. Do NOT run `ls | grep` yet.**
+> **At the nine-confirmation stage — decide the library only. Do NOT run `ls | grep` yet.**
 >
 > 1. **Pick exactly one stylistic library** — read the source material, then choose the library whose visual character best serves the deck:
 >    - **`chunk-filled`** — fill, straight-line geometry (M/L/H/V/Z only); sharp right angles; heavy, solid, architectural
@@ -127,7 +167,7 @@ See [`../templates/icons/README.md`](../templates/icons/README.md) for the curre
 >    - **Brand-logo exception**: `simple-icons` is NOT a stylistic library. Add it to the deck's icon inventory **only when** the deck genuinely contains real company / product / service brand marks (customer logos, tech-stack icons, social handles). Never substitute it for a missing generic icon.
 > 2. **Stroke weight lock (stroke-style libraries only)** — for stroke-based libraries (currently `tabler-outline`), pick one deck-wide value from `{1.5, 2, 3}` (default `2`). For heavier presence, switch library instead of going above `3`.
 >
-> **After all eight confirmations are approved — when writing `design_spec.md` §VI / `spec_lock.md`**, then materialize the icon inventory:
+> **After all nine confirmations are approved — when writing `design_spec.md` §VI / `spec_lock.md`**, then materialize the icon inventory:
 >
 > 3. Enumerate the concepts the deck actually needs (home, chart, users, …) based on the confirmed outline.
 > 4. Search for each concept's filename in the chosen library: `ls skills/ppt-master/templates/icons/<chosen-library>/ | grep <keyword>`
@@ -136,7 +176,7 @@ See [`../templates/icons/README.md`](../templates/icons/README.md) for the curre
 >
 > **Do NOT preload any index file** — when the inventory step arrives, use `ls | grep` to search on demand with zero token cost.
 
-### g. Typography Plan Confirmation (Font + Size)
+### h. Typography Plan Confirmation (Font + Size)
 
 #### Font Combinations
 
@@ -219,7 +259,7 @@ Baseline choice follows **content density**, not style. Common: `18px` (dense) /
 
 > Two baseline columns are illustrative only — for any other baseline (16/20/22/28/32…), multiply the row's ratio. Checker reads live `body` from `spec_lock.md`. Executor may pick any px within a role's band without pre-declaring; values outside **every** band require lock extension first.
 
-### h. Image Usage Confirmation
+### i. Image Usage Confirmation
 
 | Option | Approach | Suitable Scenarios |
 |--------|----------|-------------------|

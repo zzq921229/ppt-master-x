@@ -142,18 +142,14 @@ Import source content (choose based on the situation):
 
 🚧 **GATE**: Step 2 complete; project directory structure is ready.
 
-**Default — free design.** Proceed directly to Step 4. Do NOT query `layouts_index.json` unless triggered. Do NOT ask the user. Do NOT proactively suggest, hint at, or fuzzy-match any template based on content, slug-like words, or vague style descriptions.
+**Default — defer to Step 4.** Do NOT query `layouts_index.json` here. Template selection is now part of the Strategist's Eight Confirmations in Step 4 — the AI will proactively ask whether to use a built-in template when presenting the confirmation bundle. Only handle explicit template paths in this step.
 
-**Template flow triggers ONLY on an explicit template directory path** supplied by the user in their initial message. The trigger rule is mechanical, not interpretive:
+**Template flow triggers on an explicit template directory path** supplied by the user in their initial message:
 
 | User input contains | Step 3 action |
 |---|---|
 | An explicit path to a template directory (e.g. `skills/ppt-master/templates/layouts/academic_defense/`, `projects/foo/template/`, or any other absolute / relative path that resolves to a directory containing `design_spec.md` and one or more page SVGs) | Copy that directory's SVGs + `design_spec.md` + assets into the project, advance |
-| Anything else — including bare template names ("用 academic_defense 模板"), style descriptions ("麦肯锡风格" / "Google style"), brand mentions ("招商银行风格"), vague intent ("想用个模板"), or silence | Skip Step 3, free design |
-
-There is no slug matching, no name lookup, no fuzzy resolution. A template name without a path does not trigger — the user must give a path the AI can `cd` into.
-
-The path may live anywhere — `skills/ppt-master/templates/layouts/<name>/` (the built-in library), `projects/<other_project>/template/` (reusing a previous project's templates), or any other location. Location is irrelevant; what matters is that the user named the path.
+| Anything else — including bare template names ("用 academic_defense 模板"), style descriptions ("麦肯锡风格" / "Google style"), brand mentions ("招商银行风格"), vague intent ("想用个模板"), or silence | Skip Step 3; template selection will happen in Step 4 Eight Confirmations |
 
 ```bash
 # Option A: manual copy (legacy, still valid)
@@ -164,17 +160,13 @@ cp ${TEMPLATE_DIR}/*.png <project_path>/images/ 2>/dev/null || true
 cp ${TEMPLATE_DIR}/*.jpg <project_path>/images/ 2>/dev/null || true
 ```
 
-> If you used `--template <template_name>` during `project_manager.py init` in Step 2, the template files are already in place — skip the copy commands above.
+> If you used `--template <template_name>` during `project_manager.py init` in Step 2, the template files are already in place — skip the copy commands above. The Strategist will confirm the pre-applied template in Step 4.
 
-> Style descriptions ("麦肯锡风格" / "Keynote 风" / "极简风" / etc.) never trigger Step 3. They flow naturally into Strategist's Eight Confirmations as part of the user's input — Strategist uses them as a style brief when proposing color / typography / tone in confirmations e and g.
-
-> Bare template names ("academic_defense", "招商银行") do NOT trigger Step 3 even if a folder by that name exists in the library. The user must give a path. AI must not "helpfully" resolve a name to a path.
-
-> "What templates exist?" is out-of-band Q&A — answer by listing entries from `layouts_index.json` together with their paths. Listing alone does not advance the pipeline; the user still has to send a path to trigger the Step 3 copy.
+> Style descriptions ("麦肯锡风格" / "Keynote 风" / "极简风" / etc.) never trigger Step 3. They flow naturally into Strategist's Eight Confirmations as part of the user's input — Strategist uses them as a style brief when proposing color / typography / tone.
 
 > To create a new template, read `workflows/create-template.md`.
 
-**✅ Checkpoint — Default path proceeds to Step 4 without user interaction. If the user's input contains an explicit template directory path, that directory is copied before advancing.**
+**✅ Checkpoint — Default path proceeds to Step 4 without user interaction. If the user's input contains an explicit template directory path, that directory is copied before advancing. Template selection for all other cases happens in Step 4.**
 
 ---
 
@@ -193,14 +185,15 @@ Read references/strategist.md
 
 ⛔ **BLOCKING**: present the Eight Confirmations as a single bundled recommendation set and **wait for explicit user confirmation or modification** before outputting Design Specification & Content Outline. This is the single core confirmation point — once confirmed, all subsequent steps proceed automatically.
 
-1. Canvas format
-2. Page count range
-3. Target audience
-4. Style objective
-5. Color scheme
-6. Icon usage approach
-7. Typography plan
-8. Image usage approach
+1. **Template selection** — check whether a template was already applied in Step 2 (`--template`) or Step 3 (explicit path). If yes, confirm it. If not, query `layouts_index.json`, present available built-in templates by name + one-line summary, and ask the user to pick one or choose free design.
+2. Canvas format
+3. Page count range
+4. Target audience
+5. Style objective
+6. Color scheme
+7. Icon usage approach
+8. Typography plan
+9. Image usage approach
 
 **Mandatory — split-mode note** (not a ninth confirmation): after listing the eight confirmation details, you MUST append exactly one short line (rendered in the user's language, prefixed with 💡) about generation mode. Pick the variant by qualitative read of Phase A signals — recommended page count, source-material bulk, whether `topic-research` ran with substantial web-fetch accumulation:
 
