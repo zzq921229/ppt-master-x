@@ -37,7 +37,10 @@ import os
 import sys
 import shutil
 import argparse
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 from pathlib import Path
+from typing import Any
 
 # Import finalize helpers from the internal package.
 sys.path.insert(0, str(Path(__file__).parent))
@@ -106,6 +109,21 @@ def process_rounded_rect(svg_file: Path, verbose: bool = False) -> int:
         return 0
 
 
+def _map_parallel(
+    func, items: list[Path], workers: int, quiet: bool = False,
+) -> list[Any]:
+    """Execute func(item) for each item, optionally in parallel.
+
+    Falls back to sequential execution when workers <= 1 or only one item.
+    Preserves result order so downstream logic can match items to outputs.
+    """
+    if workers <= 1 or len(items) <= 1:
+        return [func(item) for item in items]
+
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        return list(executor.map(func, items))
+
+
 def finalize_project(
     project_dir: Path,
     options: dict[str, bool],
@@ -113,6 +131,7 @@ def finalize_project(
     quiet: bool = False,
     compress: bool = False,
     max_dimension: int | None = None,
+    workers: int = 1,
 ) -> bool:
     """
     Finalize SVG files in the project
@@ -161,10 +180,12 @@ def finalize_project(
     if options.get('embed_icons'):
         if not quiet:
             safe_print("[1/4] Embedding icons...")
-        icons_count = 0
-        for svg_file in svg_final.glob('*.svg'):
-            count = embed_icons_in_file(svg_file, icons_dir, dry_run=False, verbose=False)
-            icons_count += count
+        svg_files_list = list(svg_final.glob('*.svg'))
+        results = _map_parallel(
+            lambda f: embed_icons_in_file(f, icons_dir, dry_run=False, verbose=False),
+            svg_files_list, workers, quiet,
+        )
+        icons_count = sum(results)
         if not quiet:
             if icons_count > 0:
                 safe_print(f"      {icons_count} icon(s) embedded")
@@ -180,18 +201,15 @@ def finalize_project(
     if options.get('align_images'):
         if not quiet:
             safe_print("[2/4] Aligning + embedding images...")
-        img_count = 0
-        img_errors = 0
-        for svg_file in svg_final.glob('*.svg'):
-            count, errs = align_and_embed_images_in_svg(
-                svg_file,
-                dry_run=False,
-                verbose=False,
-                compress=compress,
-                max_dimension=max_dimension,
-            )
-            img_count += count
-            img_errors += errs
+        svg_files_list = list(svg_final.glob('*.svg'))
+        align_func = partial(
+            align_and_embed_images_in_svg,
+            dry_run=False, verbose=False,
+            compress=compress, max_dimension=max_dimension,
+        )
+        results = _map_parallel(align_func, svg_files_list, workers, quiet)
+        img_count = sum(r[0] for r in results)
+        img_errors = sum(r[1] for r in results)
         if not quiet:
             if img_count > 0:
                 msg = f"      {img_count} image(s) aligned + embedded"
@@ -205,10 +223,12 @@ def finalize_project(
     if options.get('flatten_text'):
         if not quiet:
             safe_print("[3/4] Flattening text...")
-        flatten_count = 0
-        for svg_file in svg_final.glob('*.svg'):
-            if process_flatten_text(svg_file, verbose=False):
-                flatten_count += 1
+        svg_files_list = list(svg_final.glob('*.svg'))
+        results = _map_parallel(
+            lambda f: process_flatten_text(f, verbose=False),
+            svg_files_list, workers, quiet,
+        )
+        flatten_count = sum(1 for r in results if r)
         if not quiet:
             if flatten_count > 0:
                 safe_print(f"      {flatten_count} file(s) processed")
@@ -219,10 +239,12 @@ def finalize_project(
     if options.get('fix_rounded'):
         if not quiet:
             safe_print("[4/4] Converting rounded rects to Path...")
-        rounded_count = 0
-        for svg_file in svg_final.glob('*.svg'):
-            count = process_rounded_rect(svg_file, verbose=False)
-            rounded_count += count
+        svg_files_list = list(svg_final.glob('*.svg'))
+        results = _map_parallel(
+            lambda f: process_rounded_rect(f, verbose=False),
+            svg_files_list, workers, quiet,
+        )
+        rounded_count = sum(results)
         if not quiet:
             if rounded_count > 0:
                 safe_print(f"      {rounded_count} rounded rectangle(s) converted")
@@ -284,8 +306,18 @@ Aliases (still accepted):
                         help='Compress images before embedding (JPEG quality=85, PNG optimize)')
     parser.add_argument('--max-dimension', type=int, default=None,
                         help='Downscale images exceeding this dimension on either axis (e.g., 2560)')
+    parser.add_argument(
+        '-j', '--workers', type=int, default=0,
+        help=('Parallel worker count for per-file processing. '
+              '0 = auto (min(cpu_count, 4)), 1 = sequential (default).'),
+    )
 
     args = parser.parse_args()
+
+    workers = args.workers
+    if workers <= 0:
+        workers = min(os.cpu_count() or 1, 4)
+    workers = max(1, workers)
 
     if not args.project_dir.exists():
         safe_print(f"[ERROR] Project directory does not exist: {args.project_dir}")
@@ -313,9 +345,12 @@ Aliases (still accepted):
             'fix_rounded': True,
         }
 
-    success = finalize_project(args.project_dir, options, args.dry_run, args.quiet,
-                               compress=args.compress,
-                               max_dimension=args.max_dimension)
+    success = finalize_project(
+        args.project_dir, options, args.dry_run, args.quiet,
+        compress=args.compress,
+        max_dimension=args.max_dimension,
+        workers=workers,
+    )
     sys.exit(0 if success else 1)
 
 

@@ -8,6 +8,7 @@ import re
 import shutil
 import tempfile
 import zipfile
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
@@ -245,6 +246,7 @@ def create_pptx_with_native_svg(
     narration_audio: dict[str, Path] | None = None,
     use_narration_timings: bool = False,
     narration_padding: float = 0.5,
+    workers: int = 1,
 ) -> bool:
     """Create a PPTX file with native SVG.
 
@@ -368,6 +370,39 @@ def create_pptx_with_native_svg(
         audio_exts_used: set[str] = set()
         mixed_animation_offset = 0
 
+        # ------------------------------------------------------------------
+        # Phase 1: Parallel pre-conversion (CPU-bound tasks)
+        # ------------------------------------------------------------------
+        native_preconverted: dict[int, tuple[str, dict[str, bytes], list[dict[str, str]], list]] = {}
+        png_preconverted: dict[int, bool] = {}
+
+        if use_native_shapes and workers > 1:
+            if verbose:
+                print(f"  Parallel workers: {workers}")
+            with ThreadPoolExecutor(max_workers=workers) as executor:
+                results = executor.map(
+                    lambda item: convert_svg_to_slide_shapes(item[1], item[0], verbose),
+                    [(i, svg_path) for i, svg_path in enumerate(svg_files, 1)],
+                )
+                for i, result in enumerate(results, 1):
+                    native_preconverted[i] = result
+        elif not use_native_shapes and use_compat_mode and workers > 1:
+            if verbose:
+                print(f"  Parallel workers: {workers}")
+            with ThreadPoolExecutor(max_workers=workers) as executor:
+                results = executor.map(
+                    lambda item: convert_svg_to_png(
+                        item[1], media_dir / f'image{item[0]}.png',
+                        width=pixel_width, height=pixel_height,
+                    ),
+                    [(i, svg_path) for i, svg_path in enumerate(svg_files, 1)],
+                )
+                for i, result in enumerate(results, 1):
+                    png_preconverted[i] = result
+
+        # ------------------------------------------------------------------
+        # Phase 2: Sequential assembly (order matters for cross-slide state)
+        # ------------------------------------------------------------------
         for i, svg_path in enumerate(svg_files, 1):
             slide_num = i
 
@@ -375,11 +410,16 @@ def create_pptx_with_native_svg(
                 # ---- Native shapes mode ----
                 if use_native_shapes:
                     slide_cfg = _slide_config(animation_config, svg_path.stem)
-                    slide_xml, media_files_dict, rel_entries, anim_targets = (
-                        convert_svg_to_slide_shapes(
-                            svg_path, slide_num=slide_num, verbose=verbose,
+                    if workers > 1:
+                        slide_xml, media_files_dict, rel_entries, anim_targets = (
+                            native_preconverted[slide_num]
                         )
-                    )
+                    else:
+                        slide_xml, media_files_dict, rel_entries, anim_targets = (
+                            convert_svg_to_slide_shapes(
+                                svg_path, slide_num=slide_num, verbose=verbose,
+                            )
+                        )
                     slide_transition, slide_transition_duration, slide_auto_advance = (
                         _slide_transition_settings(
                             slide_cfg,
@@ -519,10 +559,13 @@ def create_pptx_with_native_svg(
                     slide_has_png = False
                     if use_compat_mode:
                         png_path = media_dir / png_filename
-                        png_success = convert_svg_to_png(
-                            svg_path, png_path,
-                            width=pixel_width, height=pixel_height,
-                        )
+                        if workers > 1:
+                            png_success = png_preconverted.get(slide_num, False)
+                        else:
+                            png_success = convert_svg_to_png(
+                                svg_path, png_path,
+                                width=pixel_width, height=pixel_height,
+                            )
                         if png_success:
                             slide_has_png = True
                             has_any_image = True

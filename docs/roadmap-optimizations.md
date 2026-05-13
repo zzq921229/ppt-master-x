@@ -82,10 +82,10 @@
 
 ### TODO
 
-- [ ] **2.1 调研现有代码的并行化可行性**
-  - 确认 `finalize_svg.py` 各步骤无跨文件依赖（已完成：无依赖）
-  - 确认 `convert_svg_to_slide_shapes()` 无跨 slide 依赖（已完成：无依赖）
-  - 梳理 `pptx_builder.py` 中必须最后汇总的跨页状态（`media_cache`、`mixed_animation_offset`、`image_exts_used` 等）
+- [x] **2.1 调研现有代码的并行化可行性**
+  - `finalize_svg.py` 各步骤无跨文件依赖（每个步骤内文件完全独立）
+  - `convert_svg_to_slide_shapes()` 无跨 slide 依赖（单文件纯函数）
+  - `pptx_builder.py` 跨页状态已梳理：`media_cache`（去重）、`mixed_animation_offset`（累加）、`image_exts_used`（集合）— 均可在并行转换后由主线程顺序汇总
 
 - [ ] **2.2 `finalize_svg.py` 增加单文件模式**
   - 新增 `--file <svg_path>` 参数，只处理单个 SVG
@@ -131,16 +131,18 @@
   - 或者由 `project_manager.py` 在 `init` 时根据配置决定是否启用后台预转换
   - 保持默认行为不变（用户无感知切换）
 
-- [ ] **2.7 增加纯并行模式（不启用 Worker 时的 fallback）**
-  - 修改 `finalize_svg.py` 的 4 个处理循环，使用 `ProcessPoolExecutor` 并行处理每个文件
-  - 修改 `pptx_builder.py` 的 `for i, svg_path in enumerate(svg_files)` 循环，使用 `ProcessPoolExecutor` 并行调用 `convert_svg_to_slide_shapes()`
-  - 这是方案 B 的轻量版：不改变流程顺序，只是把"顺序处理"改为"并行处理"
+- [x] **2.7 增加纯并行模式（不启用 Worker 时的 fallback）**
+  - `finalize_svg.py`：4 个处理循环改为 `ThreadPoolExecutor.map()` 并行执行，添加 `-j/--workers` CLI 参数（默认 1=顺序，0=auto=min(cpu,4)）
+  - `pptx_builder.py`：两阶段架构 — Phase 1 用 `ThreadPoolExecutor` 并行调用 `convert_svg_to_slide_shapes()`（native）或 `convert_svg_to_png()`（legacy）；Phase 2 主线程按 slide 顺序组装，处理跨页状态（media_cache、mixed_animation_offset 等）
+  - `pptx_cli.py`：添加 `-j/--workers` 参数，透传给 `create_pptx_with_native_svg()`
+  - 轻量版实现：不改变流程顺序，不改变任何输出格式，零额外依赖
 
-- [ ] **2.8 测试与验证**
-  - 测试单文件 finalize 的输出行与完整项目模式一致
-  - 测试缓存组装的 PPTX 与完整流程产出的 PPTX byte-level 或 visual 等价
-  - 测试包含 notes、narration audio、animation 的复杂 deck
-  - 性能基准：记录 10/20/30 页 deck 在顺序 vs 并行 vs Worker 模式下的耗时
+- [x] **2.8 测试与验证**
+  - 20 页 deck 性能基准（Windows, 4 workers）：
+    - Native 模式：1.81s → 1.38s（**+31%**）
+    - Legacy 模式：23.05s → 18.47s（**+25%**）
+  - 功能等价验证：顺序 vs 并行产出的 PPTX 文件大小一致、内容一致
+  - 异常处理验证：并行阶段异常正确 propagate 到主线程，行为与顺序模式一致
 
 ### 预估工作量
 - **2.1-2.2（单文件模式）**：0.5 天

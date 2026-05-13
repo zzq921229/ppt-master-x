@@ -200,6 +200,12 @@ Recorded narration:
                         help='Prepare PowerPoint recorded timings and narrations from a complete audio directory')
     parser.add_argument('--narration-padding', type=float, default=0.5,
                         help='Seconds to add after each narration before auto-advance (default: 0.5)')
+    parser.add_argument(
+        '-j', '--workers', type=int, default=1,
+        help=('Parallel worker count for per-slide conversion. '
+              '1 = sequential (default). Higher values use a thread pool '
+              'for CPU-bound tasks (SVG→DrawingML / SVG→PNG).'),
+    )
 
     args = parser.parse_args()
 
@@ -513,6 +519,7 @@ Recorded narration:
         narration_audio=narration_audio,
         use_narration_timings=use_narration_timings,
         narration_padding=args.narration_padding,
+        workers=args.workers,
     )
 
     success = True
