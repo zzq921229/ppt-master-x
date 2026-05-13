@@ -2,9 +2,19 @@
 
 from __future__ import annotations
 
+import functools
+import os
 import re
 import math
+import sys
+from pathlib import Path
 from xml.etree import ElementTree as ET
+
+try:
+    from PIL import ImageFont
+    _HAS_PILLOW = True
+except ImportError:
+    _HAS_PILLOW = False
 
 from .drawingml_context import AffineMatrix, ConvertContext, IDENTITY_MATRIX
 
@@ -424,6 +434,200 @@ def parse_font_family(font_family_str: str) -> dict[str, str]:
     return {'latin': final_latin, 'ea': ea_font}
 
 
+# ---------------------------------------------------------------------------
+# Font file resolution (cross-platform)
+# ---------------------------------------------------------------------------
+
+_FONT_FILE_MAP: dict[str, dict[str, str]] = {
+    # CJK fonts (Windows)
+    'Microsoft YaHei':     {'regular': 'msyh.ttc',     'bold': 'msyhbd.ttc'},
+    'Microsoft JhengHei':  {'regular': 'msjh.ttc',     'bold': 'msjhbd.ttc'},
+    'SimSun':              {'regular': 'simsun.ttc',   'bold': 'simsunb.ttf'},
+    'SimHei':              {'regular': 'simhei.ttf'},
+    'FangSong':            {'regular': 'simfang.ttf'},
+    'KaiTi':               {'regular': 'simkai.ttf'},
+    'STKaiti':             {'regular': 'stkaiti.ttf'},
+    'STHeiti':             {'regular': 'stheiti.ttf'},
+    'STSong':              {'regular': 'stsong.ttf'},
+    'STFangsong':          {'regular': 'stfangso.ttf'},
+    'STXihei':             {'regular': 'stxihei.ttf'},
+    'STZhongsong':         {'regular': 'stzhongs.ttf'},
+    'YouYuan':             {'regular': 'youyuan.ttf'},
+    'LiSu':                {'regular': 'lisu.ttf'},
+    # CJK fonts (macOS)
+    'PingFang SC':         {'regular': 'PingFang.ttc'},
+    'PingFang TC':         {'regular': 'PingFang.ttc'},
+    'PingFang HK':         {'regular': 'PingFang.ttc'},
+    'Songti SC':           {'regular': 'STSong.ttf'},
+    'Songti TC':           {'regular': 'STSong.ttf'},
+    'Heiti SC':            {'regular': 'STHeiti Light.ttc', 'bold': 'STHeiti Medium.ttc'},
+    'Heiti TC':            {'regular': 'STHeiti Light.ttc', 'bold': 'STHeiti Medium.ttc'},
+    # CJK fonts (Linux / Noto)
+    'Noto Sans SC':        {'regular': 'NotoSansCJK-Regular.ttc', 'bold': 'NotoSansCJK-Bold.ttc'},
+    'Noto Sans TC':        {'regular': 'NotoSansCJK-Regular.ttc', 'bold': 'NotoSansCJK-Bold.ttc'},
+    'Noto Serif SC':       {'regular': 'NotoSerifCJK-Regular.ttc', 'bold': 'NotoSerifCJK-Bold.ttc'},
+    'Noto Serif TC':       {'regular': 'NotoSerifCJK-Regular.ttc', 'bold': 'NotoSerifCJK-Bold.ttc'},
+    'Noto Sans JP':        {'regular': 'NotoSansCJK-Regular.ttc', 'bold': 'NotoSansCJK-Bold.ttc'},
+    'Noto Serif JP':       {'regular': 'NotoSerifCJK-Regular.ttc', 'bold': 'NotoSerifCJK-Bold.ttc'},
+    'Noto Sans KR':        {'regular': 'NotoSansCJK-Regular.ttc', 'bold': 'NotoSansCJK-Bold.ttc'},
+    'WenQuanYi Micro Hei': {'regular': 'wqy-microhei.ttc'},
+    'WenQuanYi Zen Hei':   {'regular': 'wqy-zenhei.ttc'},
+    'Source Han Sans SC':  {'regular': 'SourceHanSansSC-Regular.otf', 'bold': 'SourceHanSansSC-Bold.otf'},
+    'Source Han Serif SC': {'regular': 'SourceHanSerifSC-Regular.otf', 'bold': 'SourceHanSerifSC-Bold.otf'},
+    # Japanese (Windows)
+    'Yu Gothic':           {'regular': 'YuGothM.ttc',  'bold': 'YuGothB.ttc'},
+    'Yu Gothic UI':        {'regular': 'YuGothM.ttc',  'bold': 'YuGothB.ttc'},
+    'Yu Mincho':           {'regular': 'YuMincho.ttc', 'bold': 'YuMincho.ttc'},
+    'Meiryo':              {'regular': 'meiryo.ttc',   'bold': 'meiryob.ttc'},
+    'Meiryo UI':           {'regular': 'meiryo.ttc',   'bold': 'meiryob.ttc'},
+    'MS Gothic':           {'regular': 'msgothic.ttc'},
+    'MS Mincho':           {'regular': 'msmincho.ttc'},
+    'MS PGothic':          {'regular': 'msgothic.ttc'},
+    'MS PMincho':          {'regular': 'msmincho.ttc'},
+    'MS UI Gothic':        {'regular': 'msgothic.ttc'},
+    # Korean (Windows)
+    'Malgun Gothic':       {'regular': 'malgun.ttf',   'bold': 'malgunbd.ttf'},
+    'Gulim':               {'regular': 'gulim.ttc'},
+    'Dotum':               {'regular': 'dotum.ttc'},
+    'Batang':              {'regular': 'batang.ttc'},
+    # Latin fonts (Windows)
+    'Arial':               {'regular': 'arial.ttf',    'bold': 'arialbd.ttf',    'italic': 'ariali.ttf',    'bold_italic': 'arialbi.ttf'},
+    'Arial Black':         {'regular': 'ariblk.ttf'},
+    'Segoe UI':            {'regular': 'segoeui.ttf',  'bold': 'segoeuib.ttf',   'italic': 'segoeuii.ttf',  'bold_italic': 'segoeuiz.ttf'},
+    'Segoe UI Emoji':      {'regular': 'seguiemj.ttf'},
+    'Times New Roman':     {'regular': 'times.ttf',    'bold': 'timesbd.ttf',    'italic': 'timesi.ttf',    'bold_italic': 'timesbi.ttf'},
+    'Consolas':            {'regular': 'consola.ttf',  'bold': 'consolab.ttf',   'italic': 'consolai.ttf',  'bold_italic': 'consolaz.ttf'},
+    'Calibri':             {'regular': 'calibri.ttf',  'bold': 'calibrib.ttf',   'italic': 'calibrii.ttf',  'bold_italic': 'calibriz.ttf'},
+    'Cambria':             {'regular': 'cambria.ttc',  'bold': 'cambriab.ttf',   'italic': 'cambriai.ttf'},
+    'Georgia':             {'regular': 'georgia.ttf',  'bold': 'georgiab.ttf',   'italic': 'georgiai.ttf',  'bold_italic': 'georgiaz.ttf'},
+    'Verdana':             {'regular': 'verdana.ttf',  'bold': 'verdanab.ttf',   'italic': 'verdanai.ttf',  'bold_italic': 'verdanaz.ttf'},
+    'Impact':              {'regular': 'impact.ttf'},
+    'Tahoma':              {'regular': 'tahoma.ttf',   'bold': 'tahomabd.ttf'},
+    'Courier New':         {'regular': 'cour.ttf',     'bold': 'courbd.ttf',     'italic': 'couri.ttf',     'bold_italic': 'courbi.ttf'},
+    'Trebuchet MS':        {'regular': 'trebuc.ttf',   'bold': 'trebucbd.ttf',   'italic': 'trebucit.ttf'},
+    'Comic Sans MS':       {'regular': 'comic.ttf',    'bold': 'comicbd.ttf'},
+    'Palatino Linotype':   {'regular': 'pala.ttf',     'bold': 'palab.ttf',      'italic': 'palai.ttf',     'bold_italic': 'palabi.ttf'},
+    'Book Antiqua':        {'regular': 'bkant.ttf',    'bold': 'bkant.ttf'},
+    'Garamond':            {'regular': 'gara.ttf',     'bold': 'garabd.ttf'},
+    # Latin fonts (macOS)
+    'Helvetica Neue':      {'regular': 'HelveticaNeue.ttc'},
+    'Helvetica':           {'regular': 'Helvetica.dfont'},
+    'SF Pro':              {'regular': 'SF-Pro.ttf'},
+    'SF Pro Display':      {'regular': 'SF-Pro-Display-Regular.otf', 'bold': 'SF-Pro-Display-Bold.otf'},
+    'SF Pro Text':         {'regular': 'SF-Pro-Text-Regular.otf',    'bold': 'SF-Pro-Text-Bold.otf'},
+    'SF Mono':             {'regular': 'SF-Mono-Regular.otf',        'bold': 'SF-Mono-Bold.otf'},
+    'Menlo':               {'regular': 'Menlo.ttc'},
+    'Monaco':              {'regular': 'Monaco.dfont'},
+    # Latin fonts (Linux)
+    'DejaVu Sans':         {'regular': 'DejaVuSans.ttf',      'bold': 'DejaVuSans-Bold.ttf'},
+    'DejaVu Serif':        {'regular': 'DejaVuSerif.ttf',     'bold': 'DejaVuSerif-Bold.ttf'},
+    'DejaVu Sans Mono':    {'regular': 'DejaVuSansMono.ttf',  'bold': 'DejaVuSansMono-Bold.ttf'},
+    'Liberation Sans':     {'regular': 'LiberationSans-Regular.ttf', 'bold': 'LiberationSans-Bold.ttf'},
+    'Liberation Serif':    {'regular': 'LiberationSerif-Regular.ttf', 'bold': 'LiberationSerif-Bold.ttf'},
+    'Liberation Mono':     {'regular': 'LiberationMono-Regular.ttf',  'bold': 'LiberationMono-Bold.ttf'},
+    'Roboto':              {'regular': 'Roboto-Regular.ttf',  'bold': 'Roboto-Bold.ttf'},
+    'Ubuntu':              {'regular': 'Ubuntu-Regular.ttf',  'bold': 'Ubuntu-Bold.ttf'},
+}
+
+
+# Directories to search for font files, populated lazily.
+_font_search_dirs: list[Path] | None = None
+
+
+def _get_font_dirs() -> list[Path]:
+    """Return a list of platform-specific font directories."""
+    global _font_search_dirs
+    if _font_search_dirs is not None:
+        return _font_search_dirs
+
+    dirs: list[Path] = []
+
+    # 1. User override via environment variable
+    env_dir = os.environ.get('PPT_MASTER_FONT_DIR')
+    if env_dir:
+        dirs.extend(Path(p.strip()) for p in env_dir.split(os.pathsep) if p.strip())
+
+    # 2. Platform defaults
+    if sys.platform == 'win32':
+        windir = os.environ.get('WINDIR', r'C:\Windows')
+        dirs.append(Path(windir) / 'Fonts')
+    elif sys.platform == 'darwin':
+        dirs.extend([
+            Path('/System/Library/Fonts'),
+            Path('/Library/Fonts'),
+            Path.home() / 'Library/Fonts',
+        ])
+    else:  # Linux / Unix
+        dirs.extend([
+            Path('/usr/share/fonts'),
+            Path('/usr/local/share/fonts'),
+            Path.home() / '.fonts',
+            Path.home() / '.local/share/fonts',
+        ])
+
+    _font_search_dirs = dirs
+    return dirs
+
+
+@functools.lru_cache(maxsize=128)
+def _resolve_font(font_family: str, font_weight: str = '400', font_style: str = '') -> Path | None:
+    """Resolve a font family name to an actual font file path on disk.
+
+    Uses a cross-platform lookup table. Falls back to directory scanning
+    if the family is not in the hard-coded map.
+
+    Args:
+        font_family: The font family name (e.g. 'Microsoft YaHei').
+        font_weight: CSS/SVG font-weight value.
+        font_style:  'italic' or ''.
+
+    Returns:
+        Path to the font file, or None if not found.
+    """
+    if not font_family:
+        return None
+
+    is_bold = font_weight in ('bold', '600', '700', '800', '900')
+    is_italic = font_style == 'italic'
+
+    # Determine variant key
+    if is_bold and is_italic:
+        variant = 'bold_italic'
+    elif is_bold:
+        variant = 'bold'
+    elif is_italic:
+        variant = 'italic'
+    else:
+        variant = 'regular'
+
+    family_map = _FONT_FILE_MAP.get(font_family)
+    if family_map:
+        filename = family_map.get(variant) or family_map.get('regular')
+        if filename:
+            for font_dir in _get_font_dirs():
+                candidate = font_dir / filename
+                if candidate.exists():
+                    return candidate
+
+    # Fallback: scan directories for any file whose stem loosely matches.
+    # This catches fonts installed outside the hard-coded map.
+    normalized = font_family.lower().replace(' ', '').replace('-', '')
+    for font_dir in _get_font_dirs():
+        if not font_dir.exists():
+            continue
+        try:
+            for candidate in font_dir.iterdir():
+                if candidate.suffix.lower() not in ('.ttf', '.ttc', '.otf', '.dfont'):
+                    continue
+                stem = candidate.stem.lower().replace(' ', '').replace('-', '')
+                if stem == normalized:
+                    return candidate
+        except (OSError, PermissionError):
+            continue
+
+    return None
+
+
 def is_cjk_char(ch: str) -> bool:
     """Check if a character is CJK (Chinese/Japanese/Korean)."""
     cp = ord(ch)
@@ -433,8 +637,33 @@ def is_cjk_char(ch: str) -> bool:
             0x20000 <= cp <= 0x2A6DF)
 
 
-def estimate_text_width(text: str, font_size: float, font_weight: str = '400') -> float:
-    """Estimate text width in SVG pixels."""
+def estimate_text_width(text: str, font_size: float, font_weight: str = '400', font_family: str = '') -> float:
+    """Estimate text width in SVG pixels.
+
+    When Pillow is available and the font file can be resolved on disk,
+    uses ``ImageFont.truetype().getlength()`` for precise measurement.
+    Otherwise falls back to the legacy per-character heuristic.
+
+    A 2 px safety margin is added to the Pillow path to avoid rounding
+    errors causing overflow in PowerPoint.
+    """
+    if not text:
+        return 0.0
+
+    # --- Precise path (Pillow) ---
+    if _HAS_PILLOW and font_family:
+        font_path = _resolve_font(font_family, font_weight)
+        if font_path:
+            try:
+                font = ImageFont.truetype(str(font_path), int(round(font_size)))
+                length = float(font.getlength(text))
+                # Add a small safety margin; empirically 2 px avoids
+                # sub-pixel rounding issues in PowerPoint.
+                return length + 2.0
+            except Exception:
+                pass  # Fall through to heuristic
+
+    # --- Heuristic fallback ---
     width = 0.0
     for ch in text:
         if is_cjk_char(ch):

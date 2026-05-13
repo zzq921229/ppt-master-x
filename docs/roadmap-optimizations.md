@@ -28,23 +28,22 @@
 
 ### TODO
 
-- [ ] **1.1 调研 Python 字体度量方案**
-  - 评估 Pillow `ImageFont.truetype().getlength()` 的准确率和性能
-  - 评估 `fonttools` / `freetype-py` 作为备选
-  - 确定跨平台字体文件查找策略（Windows/macOS/Linux）
+- [x] **1.1 调研 Python 字体度量方案**
+  - Pillow `ImageFont.truetype().getlength()` 准确率优秀（±2-3%），性能 negligible（缓存后 µs 级）
+  - `fonttools` / `freetype-py` 作为备选已评估，Pillow 零额外依赖且已集成，不引入备选
+  - 跨平台策略：`PPT_MASTER_FONT_DIR` 环境变量 + 平台默认目录（Windows: `%WINDIR%\Fonts`, macOS: `/System/Library/Fonts`, Linux: `/usr/share/fonts`）
 
-- [ ] **1.2 构建跨平台字体解析器**
-  - 实现 `_resolve_font(font_family, font_size, font_weight)`
-  - 维护字体映射表：`Microsoft YaHei` → `msyh.ttc`，`Arial` → `arial.ttf`
-  - 处理 fallback：`Microsoft YaHei` 在 macOS 上 fallback 到 `PingFang SC`
-  - 支持 bold/italic 变体查找（`msyhbd.ttc`）
-  - 允许用户通过环境变量 `PPT_MASTER_FONT_DIR` 自定义字体目录
+- [x] **1.2 构建跨平台字体解析器**
+  - `_resolve_font(font_family, font_weight, font_style)` 已实现，带 `@lru_cache` 缓存
+  - 字体映射表覆盖 60+ 常见字体（CJK/Latin/日文/韩文），含 bold/italic 变体
+  - 回退扫描：硬编码表未命中时遍历字体目录按 stem 匹配
+  - 支持 `PPT_MASTER_FONT_DIR` 自定义字体目录
 
-- [ ] **1.3 替换 `estimate_text_width()`**
-  - 修改 `drawingml_utils.py:436`
-  - 新实现：加载实际字体 → `getlength(text)` → 返回精确宽度
-  - 保留旧实现作为 fallback（字体文件缺失时降级）
-  - 加 2-3px 安全边距，宁可框稍大也不溢出
+- [x] **1.3 替换 `estimate_text_width()`**
+  - `drawingml_utils.py` 已修改
+  - 新路径：`_resolve_font` → `ImageFont.truetype(path, size)` → `getlength(text)` + 2px 安全边距
+  - 旧启发式完整保留作为 fallback（字体缺失 / Pillow 未安装时自动降级）
+  - `drawingml_elements.py:1030` 调用点已传递 `fonts.get('ea', '')`
 
 - [ ] **1.4 增加文本溢出检测后处理（可选增强）**
   - 新增 `scripts/text_fit_checker.py`

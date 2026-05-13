@@ -1027,7 +1027,7 @@ def convert_text(elem: ET.Element, ctx: ConvertContext) -> ShapeResult | None:
         return None
 
     # Estimate text dimensions
-    text_width = estimate_text_width(full_text, font_size, font_weight) * 1.15
+    text_width = estimate_text_width(full_text, font_size, font_weight, fonts.get('ea', '')) * 1.15
     text_height = font_size * 1.5
     padding = font_size * 0.1
 
